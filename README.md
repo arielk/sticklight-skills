@@ -44,33 +44,36 @@ All skills in this repo are written for:
 
 | Skill | File | Description |
 |-------|------|-------------|
-| SEO | [`skills/seo.md`](./skills/seo.md) | SEO for React + Vite + Tailwind SPAs — static fallbacks, `@unhead/react`, sitemaps, structured data, semantic HTML, performance |
-| Auth | [`skills/auth.md`](./skills/auth.md) | Authentication & authorization with Supabase Auth — email/password, OAuth, magic links, protected routes, RLS, role-based access |
+| SEO | [`skills/seo/SKILL.md`](./skills/seo/SKILL.md) | SEO for React + Vite + Tailwind SPAs — static fallbacks, `@unhead/react`, sitemaps, structured data, semantic HTML, performance |
+| Auth | [`skills/auth/SKILL.md`](./skills/auth/SKILL.md) | Authentication & authorization with Cloud Backend — email/password, protected routes, RLS, role-based access |
 
 ## Creating a New Skill
 
-1. Copy the template:
+1. Copy the template folder:
 
 ```bash
-cp skills/template.md skills/my-new-skill.md
+cp -r skills/template skills/my-new-skill
 ```
 
-2. Edit `skills/my-new-skill.md`:
+2. Edit `skills/my-new-skill/SKILL.md`:
    - Set `title` — short name for the skill library
    - Set `description` — explain when the AI should use this skill
    - Write the content — instructions, code examples, guidelines
 
-See [`skills/template.md`](./skills/template.md) for the starting point.
+See [`skills/template/SKILL.md`](./skills/template/SKILL.md) for the starting point.
 
 ## Repository Structure
 
 ```
 sticklight-skills/
 ├── skills/
-│   ├── seo.md           # SEO skill
-│   ├── auth.md          # Auth skill
-│   └── template.md      # Template for new skills
+│   ├── seo/
+│   │   └── SKILL.md      # SEO skill
+│   ├── auth/
+│   │   └── SKILL.md      # Auth skill
+│   └── template/
+│       └── SKILL.md      # Template for new skills
 └── README.md
 ```
 
-Each skill is a single `.md` file. No subdirectories or scripts.
+Each skill lives in its own folder. The skill content is always in `SKILL.md`.
