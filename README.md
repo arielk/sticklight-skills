@@ -1,21 +1,37 @@
 # sticklight-skills
 
-A collection of [Agent Skills](https://agentskills.io/) for Claude, tailored for the **sticklight.com** app builder stack: **React + Vite + Tailwind CSS + Supabase**.
+A collection of skills for the **sticklight.com** app builder, tailored for the **React + Vite + Tailwind CSS + Supabase** stack.
 
-Share these skills with your team so Claude knows your stack's conventions, patterns, and best practices out of the box.
+Skills teach AI how to follow your conventions and best practices. Share them with your team so everyone gets the same quality guidance.
 
-## What are Skills?
+## What is a Skill?
 
-Skills are folders of instructions, scripts, and resources that Claude loads dynamically. Each skill is self-contained in its own directory with a `SKILL.md` file that tells Claude **what** the skill does and **how** to use it.
+A skill is a single markdown file with three fields:
 
-For more background, see:
-- [Agent Skills specification](https://agentskills.io/)
-- [Skills in Claude Code](https://code.claude.com/docs/en/skills)
-- [Anthropic's skills repo](https://github.com/anthropics/skills)
+| Field | Purpose |
+|-------|---------|
+| **title** | Short name shown in the skill library |
+| **description** | When to use this skill (helps the AI decide if it's relevant) |
+| **content** | The full instructions, patterns, examples, and guidelines |
+
+These three fields are defined in YAML frontmatter (`title`, `description`) and the markdown body (content):
+
+```markdown
+---
+title: My Skill
+description: When and why to use this skill.
+---
+
+# My Skill
+
+Instructions, code examples, and guidelines go here.
+```
+
+Users fetch the skill content as text into the sticklight skill library. No folders, scripts, or supporting files needed — just the markdown.
 
 ## Stack
 
-All skills are written for this stack:
+All skills in this repo are written for:
 
 | Layer | Technology |
 |-------|-----------|
@@ -26,99 +42,35 @@ All skills are written for this stack:
 
 ## Available Skills
 
-| Skill | Description |
-|-------|-------------|
-| [seo](./skills/seo/) | SEO best practices for React + Vite + Tailwind SPAs — meta tags, structured data, semantic HTML, sitemaps, performance |
-| [auth](./skills/auth/) | Authentication & authorization with Supabase Auth — email/password, OAuth, magic links, protected routes, RLS, role-based access |
-
-## Repository Structure
-
-```
-sticklight-skills/
-├── skills/
-│   ├── seo/              # SEO skill
-│   │   └── SKILL.md
-│   └── auth/             # Auth skill
-│       └── SKILL.md
-├── template/             # Template for creating new skills
-│   └── SKILL.md
-└── README.md
-```
-
-## Usage
-
-### In Claude Code (as a Plugin)
-
-Register this repo as a plugin marketplace:
-
-```
-/plugin marketplace add arielk/sticklight-skills
-```
-
-Or install skills directly:
-
-```
-/plugin install sticklight-skills
-```
-
-### In Claude.ai
-
-Upload a `SKILL.md` file directly in Claude's settings to make a skill available in your conversations. See [Using skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude).
-
-### Locally (Personal Skills)
-
-Copy a skill folder into your personal skills directory to make it available across all your projects:
-
-```bash
-cp -r skills/seo ~/.claude/skills/seo
-```
-
-### In a Project
-
-Copy a skill folder into your project's `.claude/skills/` directory:
-
-```bash
-cp -r skills/seo your-project/.claude/skills/seo
-```
+| Skill | File | Description |
+|-------|------|-------------|
+| SEO | [`skills/seo.md`](./skills/seo.md) | SEO for React + Vite + Tailwind SPAs — static fallbacks, `@unhead/react`, sitemaps, structured data, semantic HTML, performance |
+| Auth | [`skills/auth.md`](./skills/auth.md) | Authentication & authorization with Supabase Auth — email/password, OAuth, magic links, protected routes, RLS, role-based access |
 
 ## Creating a New Skill
 
 1. Copy the template:
 
 ```bash
-cp -r template skills/my-new-skill
+cp skills/template.md skills/my-new-skill.md
 ```
 
-2. Edit `skills/my-new-skill/SKILL.md`:
-   - Set the `name` field (lowercase, hyphens for spaces)
-   - Write a clear `description` so Claude knows when to use it
-   - Add your instructions, examples, and guidelines in the markdown body
+2. Edit `skills/my-new-skill.md`:
+   - Set `title` — short name for the skill library
+   - Set `description` — explain when the AI should use this skill
+   - Write the content — instructions, code examples, guidelines
 
-3. (Optional) Add supporting files like templates, examples, or scripts in the skill directory.
+See [`skills/template.md`](./skills/template.md) for the starting point.
 
-See [`template/SKILL.md`](./template/SKILL.md) for the starting point.
+## Repository Structure
 
-## Skill Format
-
-Every skill needs a `SKILL.md` with YAML frontmatter and markdown instructions:
-
-```markdown
----
-name: my-skill
-description: A clear description of what this skill does and when to use it
----
-
-# My Skill
-
-Instructions Claude will follow when this skill is active.
-
-## Guidelines
-- Guideline 1
-- Guideline 2
-
-## Examples
-- Example 1
-- Example 2
+```
+sticklight-skills/
+├── skills/
+│   ├── seo.md           # SEO skill
+│   ├── auth.md          # Auth skill
+│   └── template.md      # Template for new skills
+└── README.md
 ```
 
-For advanced options (tool restrictions, subagent execution, dynamic context injection), see the [Claude Code skills docs](https://code.claude.com/docs/en/skills).
+Each skill is a single `.md` file. No subdirectories or scripts.

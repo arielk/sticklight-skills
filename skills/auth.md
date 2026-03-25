@@ -1,5 +1,5 @@
 ---
-name: auth
+title: Auth
 description: Authentication and authorization patterns for React + Vite + Tailwind apps using Supabase Auth. Use when implementing login, signup, password reset, OAuth providers, session management, protected routes, Row Level Security, or role-based access control with Supabase.
 ---
 

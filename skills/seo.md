@@ -1,5 +1,5 @@
 ---
-name: seo
+title: SEO
 description: SEO best practices for React + Vite + Tailwind CSS apps built with sticklight.com. Use when building or reviewing web pages, writing content, generating meta tags, improving search rankings, setting up sitemap/robots, adding structured data, or optimizing images and performance in a Vite-based SPA.
 ---
 
