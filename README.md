@@ -1,6 +1,8 @@
 # sticklight-skills
 
-A collection of [Agent Skills](https://agentskills.io/) for Claude. Share these skills with your team to extend Claude's capabilities on specialized tasks.
+A collection of [Agent Skills](https://agentskills.io/) for Claude, tailored for the **sticklight.com** app builder stack: **React + Vite + Tailwind CSS + Supabase**.
+
+Share these skills with your team so Claude knows your stack's conventions, patterns, and best practices out of the box.
 
 ## What are Skills?
 
@@ -11,12 +13,23 @@ For more background, see:
 - [Skills in Claude Code](https://code.claude.com/docs/en/skills)
 - [Anthropic's skills repo](https://github.com/anthropics/skills)
 
+## Stack
+
+All skills are written for this stack:
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React (with TypeScript) |
+| Build | Vite |
+| Styling | Tailwind CSS |
+| Backend | Supabase (Auth, Database, Edge Functions, Storage) |
+
 ## Available Skills
 
 | Skill | Description |
 |-------|-------------|
-| [seo](./skills/seo/) | SEO best practices and optimization guidelines |
-| [auth](./skills/auth/) | Authentication & authorization patterns and implementation guidelines |
+| [seo](./skills/seo/) | SEO best practices for React + Vite + Tailwind SPAs — meta tags, structured data, semantic HTML, sitemaps, performance |
+| [auth](./skills/auth/) | Authentication & authorization with Supabase Auth — email/password, OAuth, magic links, protected routes, RLS, role-based access |
 
 ## Repository Structure
 
