@@ -393,6 +393,10 @@ If the app does NOT use Cloud Backend, create a static `public/sitemap.xml` file
 | Secondary pages (Contact, FAQ) | 0.7 | monthly |
 | Legal pages (Privacy, Terms) | 0.5 | yearly |
 
+**Submit your sitemap to both:**
+- [Google Search Console](https://search.google.com/search-console) — Sitemaps section
+- [Bing Webmaster Tools](https://www.bing.com/webmasters) — Sitemaps section (also covers Yahoo and DuckDuckGo)
+
 ---
 
 ## 4. robots.txt
@@ -620,6 +624,7 @@ When building an app with SEO:
 - [ ] Clean URL structure with hyphens
 - [ ] Mobile-responsive design
 - [ ] Submit sitemap to Google Search Console
+- [ ] Submit sitemap to [Bing Webmaster Tools](https://www.bing.com/webmasters)
 - [ ] Set up IndexNow for instant search engine notifications (if using Cloud Backend)
 
 ---
