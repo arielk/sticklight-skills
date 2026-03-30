@@ -393,6 +393,10 @@ If the app does NOT use Cloud Backend, create a static `public/sitemap.xml` file
 | Secondary pages (Contact, FAQ) | 0.7 | monthly |
 | Legal pages (Privacy, Terms) | 0.5 | yearly |
 
+**Submit your sitemap to both:**
+- [Google Search Console](https://search.google.com/search-console) — Sitemaps section
+- [Bing Webmaster Tools](https://www.bing.com/webmasters) — Sitemaps section (also covers Yahoo and DuckDuckGo)
+
 ---
 
 ## 4. robots.txt
@@ -620,6 +624,253 @@ When building an app with SEO:
 - [ ] Clean URL structure with hyphens
 - [ ] Mobile-responsive design
 - [ ] Submit sitemap to Google Search Console
+- [ ] Submit sitemap to [Bing Webmaster Tools](https://www.bing.com/webmasters)
+- [ ] Set up IndexNow for instant search engine notifications (if using Cloud Backend)
+
+---
+
+## 14. IndexNow Integration
+
+IndexNow instantly notifies search engines (Bing, Yandex, Seznam, Naver) when content changes, enabling faster indexing than waiting for crawlers. Submitted URLs are automatically shared across all participating search engines.
+
+### How IndexNow Works
+
+1. You generate a key (8-128 alphanumeric characters)
+2. You host a verification file `{key}.txt` at your site root containing the key
+3. When content changes, you POST the URLs to `api.indexnow.org`
+4. IndexNow verifies ownership via the key file and shares with all participating engines
+
+### Setup
+
+#### Step 1: Generate an API Key
+
+Generate a key at [bing.com/indexnow/getstarted](https://www.bing.com/indexnow/getstarted) or use any 8-128 character string containing only `a-z`, `A-Z`, `0-9`, and `-`.
+
+Example: `a1b2c3d4e5f6g7h8`
+
+#### Step 2: Add the Secret
+
+In Settings -> Secrets, add:
+- Name: `INDEXNOW_KEY`
+- Value: Your generated key
+
+Also add your site URL:
+- Name: `SITE_URL`
+- Value: `https://yourdomain.com`
+
+#### Step 3: Host the Verification File
+
+Create `public/{your-key}.txt` containing only the key:
+
+```
+a1b2c3d4e5f6g7h8
+```
+
+The file must be accessible at `https://yourdomain.com/a1b2c3d4e5f6g7h8.txt`.
+
+#### Step 4: Deploy the Edge Function
+
+Create `supabase/functions/indexnow/index.ts`:
+
+```typescript
+import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
+
+interface RequestBody {
+  slugs?: string[];
+  urls?: string[];
+  action?: 'publish' | 'update' | 'delete';
+}
+
+Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const key = Deno.env.get('INDEXNOW_KEY');
+    const siteUrl = Deno.env.get('SITE_URL');
+
+    if (!key || !siteUrl) {
+      return new Response(
+        JSON.stringify({ error: 'INDEXNOW_KEY or SITE_URL not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const body: RequestBody = await req.json();
+    const { slugs, urls: rawUrls, action } = body;
+
+    // Build full URLs from slugs or use provided URLs
+    let urlList: string[] = [];
+    if (rawUrls && rawUrls.length > 0) {
+      urlList = rawUrls;
+    } else if (slugs && slugs.length > 0) {
+      urlList = slugs.map((slug) => `${siteUrl}/post/${slug}`);
+    }
+
+    if (urlList.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'No URLs or slugs provided' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // Parse host from site URL
+    const host = new URL(siteUrl).host;
+
+    // Submit to IndexNow API
+    const indexNowPayload = {
+      host,
+      key,
+      keyLocation: `${siteUrl}/${key}.txt`,
+      urlList: urlList.slice(0, 10000),
+    };
+
+    const response = await fetch(INDEXNOW_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify(indexNowPayload),
+    });
+
+    if (response.ok || response.status === 202) {
+      console.log(
+        `IndexNow: submitted ${urlList.length} URL(s), action=${action || 'unknown'}, status=${response.status}`,
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Successfully submitted ${urlList.length} URL(s) to IndexNow`,
+          urls: urlList,
+          status: response.status,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const errorText = await response.text();
+    console.error(`IndexNow error: status=${response.status}, body=${errorText}`);
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: `IndexNow API returned ${response.status}`,
+        details: errorText,
+      }),
+      { status: response.status, headers: { 'Content-Type': 'application/json' } },
+    );
+  } catch (err) {
+    console.error('IndexNow function error:', err);
+    return new Response(
+      JSON.stringify({ success: false, error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+});
+```
+
+Deploy with `verifyJwt: false` if you want to call it without auth, or keep JWT verification and pass the anon key.
+
+### Client-Side Helper
+
+Add this helper to call the Edge Function from your app:
+
+```typescript
+async function notifyIndexNow(slug: string, action: 'publish' | 'update' | 'delete') {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/indexnow`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({ slugs: [slug], action }),
+    });
+  } catch (err) {
+    console.error('IndexNow notification failed:', err);
+  }
+}
+```
+
+**Call after successful database operations:**
+
+| Action | When to Call |
+|--------|--------------|
+| `'publish'` | New post published |
+| `'update'` | Published post content updated |
+| `'delete'` | Post archived or unpublished |
+
+### API Reference
+
+**Edge Function endpoint:**
+
+```
+POST /functions/v1/indexnow
+Content-Type: application/json
+
+{
+  "slugs": ["my-post-slug"],
+  "action": "publish"
+}
+```
+
+Or with full URLs:
+
+```
+POST /functions/v1/indexnow
+Content-Type: application/json
+
+{
+  "urls": ["https://yourdomain.com/post/my-post"],
+  "action": "update"
+}
+```
+
+**IndexNow API (what the Edge Function calls):**
+
+```
+POST https://api.indexnow.org/indexnow
+Content-Type: application/json; charset=utf-8
+
+{
+  "host": "yourdomain.com",
+  "key": "a1b2c3d4e5f6g7h8",
+  "keyLocation": "https://yourdomain.com/a1b2c3d4e5f6g7h8.txt",
+  "urlList": [
+    "https://yourdomain.com/post/my-post"
+  ]
+}
+```
+
+**Response codes from IndexNow API:**
+
+| HTTP Code | Meaning |
+|-----------|---------|
+| 200 | URL submitted successfully |
+| 202 | URL received, key validation pending |
+| 400 | Invalid format |
+| 403 | Key not valid (not found or mismatch) |
+| 422 | URLs don't belong to the host |
+| 429 | Too many requests (potential spam) |
+
+### Notes
+
+- Notifications should run in the background (non-blocking) — don't await the result in the UI
+- Failures are logged server-side but should never interrupt user flow
+- IndexNow automatically shares submissions across all participating search engines
+- You can submit up to 10,000 URLs per request — batch when possible
+- Only submit URLs that have actually changed — don't resubmit unchanged content
+- Verify your setup at [Bing Webmaster Tools](https://www.bing.com/webmasters) under the IndexNow tab
 
 ---
 

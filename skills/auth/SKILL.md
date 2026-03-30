@@ -456,11 +456,44 @@ export default function ForgotPassword() {
 }
 ```
 
-### 4.4 Reset Password Page (Set New Password)
+### 4.4 Reset Password Page (with Error Handling)
+
+This page handles expired links, invalid tokens, and shows appropriate error messages.
+
+#### Default Email Service
+
+Cloud Backend includes a built-in email service that works out of the box. No SMTP configuration needed.
+
+| Aspect | Default Service |
+|--------|-----------------|
+| Sender | `noreply@mail.app.supabase.io` |
+| Rate limit | ~4 emails/hour per user |
+| Link expiration | 1 hour |
+
+For production, consider configuring a custom SMTP for branded emails and higher limits.
+
+#### Error Handling
+
+When a reset link is invalid or expired, Cloud Backend redirects with error parameters in the URL hash:
+
+```
+/reset-password#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired
+```
+
+**Common error codes:**
+
+| Error Code | Meaning | User Action |
+|------------|---------|-------------|
+| `otp_expired` | Link expired (default: 1 hour) | Request new link |
+| `access_denied` | Link already used or invalid | Request new link |
+
+Always parse the URL hash on page load and show a helpful message with option to request a new link.
+
+#### Component
 
 ```typescript
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function ResetPassword() {
@@ -468,7 +501,55 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check for error in URL hash (e.g., expired link)
+    const hash = window.location.hash;
+    if (hash) {
+      const params = new URLSearchParams(hash.substring(1));
+      const errorCode = params.get('error_code');
+      const errorDescription = params.get('error_description');
+      
+      if (errorCode || errorDescription) {
+        if (errorCode === 'otp_expired') {
+          setLinkError('This reset link has expired. Please request a new one.');
+        } else {
+          setLinkError(errorDescription?.replace(/\+/g, ' ') || 'Invalid reset link.');
+        }
+        return;
+      }
+    }
+
+    if (!supabase) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setSessionReady(true);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setSessionReady(true);
+      }
+    });
+
+    // Timeout if session doesn't become ready
+    const timeout = setTimeout(() => {
+      if (!sessionReady) {
+        setLinkError('Unable to verify reset link. It may have expired.');
+      }
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, [sessionReady]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -492,14 +573,34 @@ export default function ResetPassword() {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error: updateError } = await supabase.auth.updateUser({ password });
 
-    if (error) {
-      setError(error.message);
+    if (updateError) {
+      setError(updateError.message);
+      setLoading(false);
     } else {
-      navigate('/login');
+      setSuccess(true);
+      await supabase.auth.signOut();
+      setTimeout(() => navigate('/login'), 2000);
     }
-    setLoading(false);
+  }
+
+  // Show error if link is expired/invalid
+  if (linkError) {
+    return (
+      <div>
+        <p>{linkError}</p>
+        <Link to="/forgot-password">Request New Link</Link>
+      </div>
+    );
+  }
+
+  if (!sessionReady) {
+    return <div>Verifying reset link...</div>;
+  }
+
+  if (success) {
+    return <div>Password updated! Redirecting to login...</div>;
   }
 
   return (
@@ -636,7 +737,7 @@ const { data } = await supabase
 - [ ] Create Login page
 - [ ] Create Signup page
 - [ ] Create Forgot Password page
-- [ ] Create Reset Password page
+- [ ] Create Reset Password page (with expired link handling)
 - [ ] Add Logout functionality
 - [ ] Create first user via signup or Settings -> Users
 - [ ] Promote user to admin via Data tab (if roles needed)
