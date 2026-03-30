@@ -620,6 +620,89 @@ When building an app with SEO:
 - [ ] Clean URL structure with hyphens
 - [ ] Mobile-responsive design
 - [ ] Submit sitemap to Google Search Console
+- [ ] Set up IndexNow for instant search engine notifications (if using Cloud Backend)
+
+---
+
+## 14. IndexNow Integration
+
+IndexNow instantly notifies search engines (Bing, Yandex, Seznam, Naver) when content changes, enabling faster indexing than waiting for crawlers.
+
+### Setup
+
+1. **Generate an IndexNow key** at [indexnow.org](https://www.indexnow.org/) or use any 8-128 character alphanumeric string (e.g., UUID)
+
+2. **Add the secret** in Settings -> Secrets:
+   - Name: `INDEXNOW_KEY`
+   - Value: Your generated key
+
+3. **Create verification file** at `public/{your-key}.txt` containing just the key:
+   ```
+   your-key-here
+   ```
+
+4. **Deploy the Edge Function** at `supabase/functions/indexnow/index.ts`:
+   - Accepts `slugs[]` or `urls[]` + `action` (publish/update/delete)
+   - Submits to IndexNow API with key verification
+   - Returns success/failure status
+
+### Automatic Triggers
+
+Integrate IndexNow calls into content management flows:
+
+```typescript
+// Helper function (add to post editor or content service)
+async function notifyIndexNow(slug: string, action: 'publish' | 'update' | 'delete') {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  await fetch(`${supabaseUrl}/functions/v1/indexnow`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabaseAnonKey}`,
+    },
+    body: JSON.stringify({ slugs: [slug], action }),
+  });
+}
+```
+
+**Call after successful database operations:**
+
+| Action | When to Call |
+|--------|--------------|
+| `'publish'` | New post published |
+| `'update'` | Published post content updated |
+| `'delete'` | Post archived or unpublished |
+
+### Edge Function Endpoint
+
+```
+POST /functions/v1/indexnow
+
+Body:
+{
+  "slugs": ["my-post-slug"],      // OR
+  "urls": ["https://site.com/post/my-post"],
+  "action": "publish"             // publish | update | delete
+}
+
+Response:
+{
+  "success": true,
+  "message": "Successfully submitted 1 URL(s) to IndexNow",
+  "urls": ["https://site.com/post/my-post"]
+}
+```
+
+### Notes
+
+- Notifications run silently in background (non-blocking)
+- Failures are logged but don't interrupt user flow
+- IndexNow shares submissions across participating search engines
+- Rate limit: No strict limit, but batch URLs when possible (up to 10,000 per request)
 
 ---
 
