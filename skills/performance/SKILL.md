@@ -272,7 +272,7 @@ function LazyMap() {
 
 ### Always Include Dimensions
 
-Prevent Cumulative Layout Shift (CLS) by specifying `width` and `height` on every image. The browser reserves space before the image loads:
+Prevent Cumulative Layout Shift (CLS) by specifying `width` and `height` on every image. The browser uses these to calculate the aspect ratio and reserve space before the image loads:
 
 ```tsx
 <img
@@ -280,8 +280,11 @@ Prevent Cumulative Layout Shift (CLS) by specifying `width` and `height` on ever
   alt="Product photo showing red sneakers"
   width={800}
   height={600}
+  className="w-full h-auto"
 />
 ```
+
+The `width` and `height` attributes tell the browser the aspect ratio for space reservation. Adding `className="w-full h-auto"` (Tailwind) makes the image scale responsively within its container instead of rendering at the fixed pixel dimensions. Without this, the image renders at exactly 800x600px regardless of container size.
 
 ### Loading Priority Attributes
 
@@ -311,6 +314,7 @@ Prevent Cumulative Layout Shift (CLS) by specifying `width` and `height` on ever
   alt="App builder dashboard showing a website preview"
   width={1200}
   height={630}
+  className="w-full h-auto"
   loading="eager"
   fetchPriority="high"
 />
@@ -321,6 +325,7 @@ Prevent Cumulative Layout Shift (CLS) by specifying `width` and `height` on ever
   alt="Template preview for e-commerce store"
   width={400}
   height={300}
+  className="w-full h-auto"
   loading="lazy"
 />
 ```
