@@ -46,7 +46,7 @@ All skills in this repo are written for:
 |-------|------|-------------|
 | SEO | [`skills/seo/SKILL.md`](./skills/seo/SKILL.md) | SEO for React + Vite + Tailwind SPAs — static fallbacks, `@unhead/react`, sitemaps, structured data, semantic HTML, performance |
 | Auth | [`skills/auth/SKILL.md`](./skills/auth/SKILL.md) | Authentication & authorization with Cloud Backend — email/password, protected routes, RLS, role-based access |
-| Performance | [`skills/performance/SKILL.md`](./skills/performance/SKILL.md) | Loading optimization — fonts, image priority, code splitting, animations, Core Web Vitals, Supabase queries |
+| Performance | [`skills/performance/SKILL.md`](./skills/performance/SKILL.md) | Loading & runtime optimization — critical rendering path, fonts, image priority, code splitting, animations, React render performance, memory management, network/caching, Core Web Vitals, Supabase queries |
 
 ## Creating a New Skill
 
