@@ -1,11 +1,37 @@
 ---
 title: SEO
-description: SEO best practices for React + Vite + Tailwind CSS apps built with sticklight.com. Use when building or reviewing web pages, writing content, generating meta tags, improving search rankings, setting up sitemap/robots, adding structured data, or optimizing images and performance in a Vite-based SPA.
+version: "1.0"
+description: |
+  SEO best practices for React + Vite + Tailwind CSS apps built with
+  sticklight.com. Use when building or reviewing web pages, writing
+  content for the web, generating meta tags, improving search rankings,
+  setting up sitemap or robots.txt, adding structured data (JSON-LD),
+  or optimizing images and performance in a Vite-based SPA. Covers:
+  static fallback meta tags, dynamic SEO with @unhead/react, useSEO
+  hook, sitemaps (dynamic via Edge Function and static), semantic HTML,
+  heading hierarchy, image SEO, link best practices, URL structure,
+  Core Web Vitals, favicon and OG image specs, mobile-first design,
+  and IndexNow integration for instant search engine notifications.
 ---
 
 # SEO Skill for Sticklight Apps
 
 This skill helps you build React apps with proper SEO implementation for search engines and social sharing.
+
+## Your Task
+
+When this skill is active, follow these steps:
+
+1. **Assess the current state** — Check if the project already has SEO setup (`index.html` meta tags, `@unhead/react`, `useSEO` hook, sitemap, robots.txt)
+2. **Add static fallbacks** — Ensure `index.html` has default meta tags with `data-hid` attributes for crawlers that don't execute JavaScript
+3. **Set up dynamic SEO** — Install `@unhead/react`, create the provider, and add the `useSEO` hook
+4. **Apply per-page SEO** — Call `useSEO()` on every page/route with appropriate title, description, image, and URL
+5. **Add structured data** — Use `useArticleSchema()` for articles/blog posts, or add JSON-LD for other content types
+6. **Configure sitemap and robots.txt** — Create a dynamic sitemap (Edge Function) or static sitemap, and add `robots.txt`
+7. **Use semantic HTML** — Ensure proper `<header>`, `<main>`, `<article>`, `<section>`, `<footer>` structure with correct heading hierarchy
+8. **Optimize assets** — Add `alt` to images, use lazy loading, set dimensions, prefer WebP, use descriptive link text
+9. **Set up IndexNow** — If using Cloud Backend, deploy the IndexNow Edge Function for instant search engine notifications
+10. **Verify** — Run through the SEO Checklist (section 13) before shipping
 
 ## Overview
 
@@ -17,6 +43,7 @@ SPAs (Single Page Applications) need special SEO handling because search engines
 - Semantic HTML structure
 - Image optimization
 - Performance best practices
+- IndexNow integration
 
 ---
 
@@ -874,6 +901,48 @@ Content-Type: application/json; charset=utf-8
 
 ---
 
+## Process
+
+When applying SEO to a page or project, follow this workflow:
+
+1. Read the existing page/component code
+2. Check if `@unhead/react` provider is set up — if not, create `UnheadProvider` and wrap the app
+3. Check if `useSEO` hook exists — if not, create `src/hooks/useSEO.ts` with site constants
+4. Add `useSEO()` call to the page with correct `title`, `description`, `url`, `type`, and `image`
+5. If the page is an article/blog post, also add `useArticleSchema()`
+6. If the page should not be indexed (404, admin, draft), set `noIndex: true`
+7. Verify the page uses semantic HTML: one `<h1>`, proper heading hierarchy, `<main>`, `<article>` where appropriate
+8. Verify all images have descriptive `alt`, `width`, `height`, and `loading="lazy"` where appropriate
+9. Verify all links have descriptive anchor text and external links have `rel="noopener noreferrer"`
+10. Check that `index.html` has static fallback meta tags with `data-hid` attributes
+11. Check that `public/robots.txt` and `public/sitemap.xml` exist
+12. If the project has dynamic content with Cloud Backend, verify the sitemap Edge Function is deployed
+13. If IndexNow is set up, call `notifyIndexNow()` after publishing or updating content
+
+---
+
+## Output Format
+
+When generating or modifying a page component, always include:
+
+1. **`useSEO()` call** at the top of the component with all relevant props
+2. **`useArticleSchema()`** if the page is an article (blog post, news, product)
+3. **Semantic HTML structure** — `<main>`, `<article>`, `<section>` as appropriate
+4. **Single `<h1>`** matching the page intent, followed by proper heading hierarchy
+5. **Image tags** with `alt`, `width`, `height`, and `loading="lazy"`
+6. **Descriptive link text** — no "click here" or "learn more"
+
+When generating project-level SEO setup, include:
+
+1. **`src/providers/UnheadProvider.tsx`** — provider component
+2. **`src/hooks/useSEO.ts`** — hook with site constants, `useSEO`, and `useArticleSchema`
+3. **`index.html`** — static meta tags with `data-hid` attributes
+4. **`public/robots.txt`** — with sitemap reference
+5. **`public/sitemap.xml`** — static or sitemapindex pointing to Edge Function
+6. **`public/favicon.svg`** and **`public/og-image.jpeg`** — asset placeholders or instructions
+
+---
+
 ## Key Points
 
 1. **Always use `key` attributes** in useHead meta tags for proper deduplication
@@ -882,5 +951,5 @@ Content-Type: application/json; charset=utf-8
 4. **Use `SUPABASE_ANON_KEY`** for sitemaps to respect RLS and only expose public content
 5. **Canonical URLs** prevent duplicate content issues
 6. **noIndex** for pages that shouldn't be indexed (404, admin pages)
-7. **One h1 per page** - should match the page's main topic
+7. **One h1 per page** — should match the page's main topic
 8. **Semantic HTML** helps search engines understand your content structure
