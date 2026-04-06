@@ -8,8 +8,8 @@ description: |
   Paint (FCP), Largest Contentful Paint (LCP), Cumulative Layout Shift
   (CLS), or Total Blocking Time (TBT). Also use when diagnosing slow
   renders, large bundles, memory leaks, or poor Lighthouse scores.
-  Covers: critical rendering path (inline critical CSS, above-the-fold
-  optimization), font loading strategy (preconnect, preload, self-hosting,
+  Covers: critical rendering path (loading shell, resource hints,
+  above-the-fold optimization), font loading strategy (preconnect, preload, self-hosting,
   display=swap), third-party script deferral (analytics, GTM, chat
   widgets), image optimization (dimensions, loading priority, fetchPriority,
   WebP/AVIF, responsive images with srcset), CSS performance (will-change,
@@ -36,7 +36,7 @@ This skill helps you optimize web application loading performance, reduce Core W
 When this skill is active, follow these steps:
 
 1. **Audit current performance** — Run Lighthouse or PageSpeed Insights to get a baseline score; check the project for missing image dimensions, render-blocking scripts, unoptimized fonts, and layout shift issues
-2. **Optimize the critical rendering path** — Inline critical CSS, configure resource hints (`preconnect`, `dns-prefetch`, `preload`), and structure `index.html` for optimal loading order
+2. **Optimize the critical rendering path** — Add a lightweight loading shell to `index.html`, configure resource hints (`preconnect`, `dns-prefetch`, `preload`), and structure `<head>` for optimal loading order
 3. **Optimize font loading** — Add `preconnect`, `preload`, and `display=swap` for all web fonts; consider self-hosting for maximum control
 4. **Defer third-party scripts** — Move analytics, GTM, chat widgets, and tracking scripts to load after the page is ready
 5. **Fix image loading** — Add `width`/`height` to all images, set correct `loading` and `fetchPriority` attributes based on viewport position, use responsive images with `srcset` where appropriate
@@ -66,27 +66,30 @@ When this skill is active, follow these steps:
 
 The critical rendering path is the sequence of steps the browser takes to convert HTML, CSS, and JavaScript into pixels on screen. Minimize the work the browser must do before the first paint.
 
-### Inline Critical CSS
+### Loading Shell (SPA-Specific)
 
-Extract the CSS needed for above-the-fold content and inline it directly in `<head>`. This eliminates a render-blocking network request:
+In a React SPA, the browser shows a blank page until JavaScript downloads, parses, and renders the first component. Unlike server-rendered pages, there is no HTML content to style with "inline critical CSS" — the initial document is just an empty `<div id="root"></div>`.
+
+Instead, add a lightweight loading shell directly in `index.html` so users see something instantly while the JS bundle loads:
 
 ```html
-<head>
-  <style>
-    /* Critical CSS — only styles needed for initial viewport */
-    *,*::before,*::after{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,sans-serif;background:#fff}
-    .hero{min-height:100vh;display:flex;align-items:center}
-    .nav{position:sticky;top:0;z-index:50}
-  </style>
-  
-  <!-- Full stylesheet loaded async -->
-  <link rel="preload" as="style" href="/assets/main.css" onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="/assets/main.css" /></noscript>
-</head>
+<body>
+  <div id="root">
+    <!-- Loading shell — visible until React mounts and replaces this -->
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;background:#fff">
+      <div style="text-align:center">
+        <div style="width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.6s linear infinite;margin:0 auto"></div>
+      </div>
+    </div>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
 ```
 
-In a Vite + Tailwind project, Vite handles CSS bundling automatically. Focus on ensuring the CSS bundle stays small through proper Tailwind purge configuration (section 4).
+React's `createRoot(document.getElementById('root')!).render(...)` automatically replaces the loading shell content when the app mounts — no cleanup needed.
+
+**Why not inline critical CSS in an SPA?** Traditional critical CSS extraction (inlining above-the-fold styles and async-loading the rest) is designed for server-rendered pages that have real HTML content before JS runs. In a Vite + React SPA, Vite bundles and injects all CSS automatically alongside the JS. The CSS and JS arrive together — there's no separate stylesheet to "defer." Focus on keeping the total CSS bundle small through Tailwind purge (section 5) instead.
 
 ### Resource Hints
 
@@ -1362,6 +1365,7 @@ When modifying existing code, preserve:
 ## 16. Performance Checklist
 
 ### Critical Rendering Path
+- [ ] Loading shell in `index.html` inside `<div id="root">` so users see feedback before JS loads
 - [ ] Resource hints (`preconnect`, `dns-prefetch`, `preload`) are in `<head>`
 - [ ] `index.html` loads resources in optimal order (section 13)
 - [ ] No render-blocking third-party scripts in `<head>`
