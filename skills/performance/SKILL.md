@@ -31,10 +31,10 @@ You are a performance auditor that identifies and fixes Core Web Vitals issues i
 When this skill is active, follow these steps:
 
 1. **Scan for anti-patterns** — Read the code and identify every performance issue from the Anti-Patterns Quick Reference below
-2. **Fix each issue** — Apply the correct pattern from the detailed sections (1–11)
+2. **Fix each issue** — Apply the correct pattern from the detailed sections (1–8)
 3. **Preserve behavior** — Keep the component's functionality, props API, and routing intact
 4. **Self-audit** — After fixing, ask: "What Core Web Vitals issues remain in this code?" Answer briefly, then fix any remaining issues
-5. **Verify** — Run through the Performance Checklist (section 12) before shipping
+5. **Verify** — Run through the Performance Checklist (section 9) before shipping
 
 ## Anti-Patterns Quick Reference
 
@@ -804,61 +804,17 @@ Structure your `<head>` to load resources in optimal order. Critical resources f
 
 ---
 
-## 9. Measuring Performance
-
-### Lighthouse
-
-Run Lighthouse in Chrome DevTools (Lighthouse tab) or via CLI:
-
-```bash
-npx lighthouse https://yourdomain.com --view
-```
-
-### PageSpeed Insights
-
-Test live URLs at [pagespeed.web.dev](https://pagespeed.web.dev/). Shows both lab data (simulated) and field data (real user metrics from Chrome UX Report).
-
-### Chrome DevTools Performance Tab
-
-1. Open DevTools -> Performance tab
-2. Click Record, reload the page, stop recording
-3. Look for long tasks (red bars), layout shifts, and rendering bottlenecks
-
-### Web Vitals in Code
-
-Add real user monitoring with the `web-vitals` library:
-
-```tsx
-import { onLCP, onINP, onCLS } from 'web-vitals';
-
-onLCP(console.log);
-onINP(console.log);
-onCLS(console.log);
-```
-
-### Performance Budgets
-
-Target sizes to aim for when writing code and choosing dependencies:
-
-| Resource | Budget |
-|----------|--------|
-| Total font files | < 100KB |
-| Hero image | < 150KB |
-| Lighthouse Performance score | >= 90 |
-
----
-
 ## Process
 
 When optimizing a project's performance, follow this workflow:
 
 1. Read the code carefully
 2. Scan for every anti-pattern in the Anti-Patterns Quick Reference
-3. Fix each issue using the patterns from sections 1–9
+3. Fix each issue using the patterns from sections 1–8
 4. Ensure the revised code preserves existing behavior, props interfaces, and routing
 5. **Self-audit** — ask: "What Core Web Vitals issues remain in this code?" Answer with a brief list
 6. Fix any remaining issues found in the self-audit
-7. Run through the Performance Checklist (section 12)
+7. Run through the Performance Checklist (section 9)
 8. Present the final optimized code
 
 ---
@@ -1008,7 +964,7 @@ export default function Gallery() {
 
 ---
 
-## 12. Performance Checklist
+## 9. Performance Checklist
 
 ### Critical Rendering Path
 - [ ] Loading shell in `index.html` inside `<div id="root">`
@@ -1054,6 +1010,3 @@ export default function Gallery() {
 - [ ] Heavy components behind interactions (modals, dialogs) are lazy loaded
 - [ ] No oversized dependencies (moment.js, full lodash, full icon libraries)
 
-### Measurement
-- [ ] Lighthouse performance score is 90+
-- [ ] Core Web Vitals meet targets (LCP < 2.5s, INP < 200ms, CLS < 0.1)
