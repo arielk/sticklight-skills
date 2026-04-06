@@ -9,14 +9,15 @@ description: |
   (CLS), or Total Blocking Time (TBT). Also use when diagnosing slow
   renders, large bundles, memory leaks, or poor Lighthouse scores.
   Covers: critical rendering path (loading shell, resource hints,
-  above-the-fold optimization), font loading strategy (preconnect, preload, self-hosting,
-  display=swap), third-party script deferral (analytics, GTM, chat
+  above-the-fold optimization), font loading strategy (preconnect, preload,
+  self-hosting, display=swap, subsetting, variable fonts), third-party script deferral (analytics, GTM, chat
   widgets), image optimization (dimensions, loading priority, fetchPriority,
   WebP/AVIF, responsive images with srcset), CSS performance (will-change,
   GPU-accelerated animations, transform/opacity, Tailwind CSS purge),
   event listener optimization (passive scroll, debounce, cleanup),
   animation best practices (CSS-only, prefers-reduced-motion, requestAnimationFrame),
-  code splitting with React.lazy and dynamic imports, Vite bundle
+  code splitting with React.lazy and dynamic imports, skeleton screens
+  for perceived performance, Vite bundle
   optimization (manual chunks, tree shaking, compression), React render
   performance (React.memo, useMemo, useCallback, virtualization, context
   splitting), network optimization (resource hints, prefetch, dns-prefetch,
@@ -188,6 +189,44 @@ Place font files in `public/fonts/` and preload the most critical weight:
 <link rel="preload" as="font" type="font/woff2" href="/fonts/Inter-Regular.woff2" crossorigin />
 ```
 
+### Font Subsetting
+
+Load only the character ranges you need. A full font file with all Unicode blocks can be 200KB+, but subsetting to just Latin and specific scripts can save up to 90%:
+
+```css
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Regular-Latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-007F, U+0080-00FF; /* Basic Latin + Latin Extended */
+}
+```
+
+Google Fonts does this automatically — when you request a font, it serves subset files per script. If self-hosting, use tools like `pyftsubset` (from `fonttools`) or [glyphanger](https://github.com/zachleat/glyphanger) to strip unused characters.
+
+### Variable Fonts
+
+Use a variable font instead of loading separate files for each weight. One file covers the full weight range (and optionally width, italic, etc.):
+
+```css
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+```
+
+| Approach | Files | Typical Size |
+|----------|-------|-------------|
+| 4 static weights (400, 500, 600, 700) | 4 files | ~100KB total |
+| 1 variable font (100-900) | 1 file | ~50-70KB total |
+
+Variable fonts reduce HTTP requests and often have a smaller total size than multiple static files. Most modern fonts (Inter, Roboto, Open Sans) offer variable versions.
+
 ### Font Loading Budget
 
 Limit web fonts to reduce download size and prevent layout shift:
@@ -195,8 +234,9 @@ Limit web fonts to reduce download size and prevent layout shift:
 | Guideline | Recommendation |
 |-----------|----------------|
 | Number of families | 1-2 maximum |
-| Number of weights | 3-4 per family (e.g. 400, 500, 600, 700) |
+| Number of weights | Variable font preferred, or 3-4 static weights max |
 | Formats | woff2 only (best compression, widest support) |
+| Subsetting | Only needed character ranges (Latin, Hebrew, etc.) |
 | Total font size | < 100KB for all font files |
 | Fallback stack | Always include system fonts: `Inter, system-ui, -apple-system, sans-serif` |
 
@@ -771,6 +811,42 @@ Use `npx vite-bundle-visualizer` to see what's in your bundles and identify larg
 | Moment.js (300KB+) | Replace with `date-fns` or `dayjs` (2-7KB) |
 | Full icon library imported | Import individual icons: `import { IconMenu } from '@tabler/icons-react'` |
 | Unused dependencies | Remove from `package.json`, verify with `npx depcheck` |
+
+### Skeleton Screens (Perceived Performance)
+
+Use skeleton screens instead of spinners for `<Suspense>` fallbacks and data loading states. Skeletons mimic the shape of the incoming content, making the app feel faster because users perceive progress rather than waiting:
+
+```tsx
+function PageSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4 p-6">
+      {/* Nav placeholder */}
+      <div className="h-8 w-48 rounded bg-gray-200" />
+      {/* Hero placeholder */}
+      <div className="h-64 w-full rounded-lg bg-gray-200" />
+      {/* Content lines */}
+      <div className="space-y-2">
+        <div className="h-4 w-full rounded bg-gray-200" />
+        <div className="h-4 w-5/6 rounded bg-gray-200" />
+        <div className="h-4 w-4/6 rounded bg-gray-200" />
+      </div>
+    </div>
+  );
+}
+
+// Use as Suspense fallback
+<Suspense fallback={<PageSkeleton />}>
+  <Dashboard />
+</Suspense>
+```
+
+| Approach | Perceived Speed | CLS Risk | Use When |
+|----------|----------------|----------|----------|
+| Spinner | Slow — user sees no content | Low (fixed size) | Short, unpredictable waits (< 300ms) |
+| Skeleton | Fast — user sees content shape | Low if dimensions match | Page loads, data fetching, route transitions |
+| Blank / `null` | Worst — nothing visible | None | Never (avoid for any user-facing state) |
+
+Match skeleton dimensions to the real content to avoid layout shift when the actual content replaces the skeleton. Tailwind's `animate-pulse` handles the shimmer animation automatically.
 
 ---
 
@@ -1398,6 +1474,8 @@ When modifying existing code, preserve:
 - [ ] Fonts use `preconnect` and `preload`
 - [ ] Fonts use `display=swap` (or `font-display: swap` for self-hosted)
 - [ ] Font files are woff2 format
+- [ ] Fonts are subsetted to needed character ranges
+- [ ] Variable font used where possible (single file for all weights)
 - [ ] Total font download < 100KB
 
 ### Images
@@ -1422,6 +1500,7 @@ When modifying existing code, preserve:
 
 ### JavaScript & React
 - [ ] Routes use `React.lazy()` and `<Suspense>`
+- [ ] Suspense fallbacks use skeleton screens (not spinners or blank) for page-level loading
 - [ ] Heavy components behind interactions (modals, dialogs, conditional panels) are lazy loaded
 - [ ] `React.memo` on expensive components with stable props
 - [ ] Contexts are split by update frequency
