@@ -661,28 +661,47 @@ function App() {
 
 ### Component-Level Splitting
 
-For heavy components that aren't needed immediately (modals, charts, editors), split them too:
+Split components that are **hidden behind user interaction** — modals, dialogs, expandable panels, and conditionally rendered heavy widgets. This reduces the initial JS bundle size, which directly improves TBT and LCP.
+
+Only lazy-load components that are **not rendered on initial page load**. If a component always renders when the page opens, lazy-loading it just adds a network waterfall and a flash of loading state without reducing the work needed for first paint.
 
 ```tsx
-const RichTextEditor = lazy(() => import('./components/RichTextEditor'));
 const ChartDashboard = lazy(() => import('./components/ChartDashboard'));
+const ShareDialog = lazy(() => import('./components/ShareDialog'));
 
 function PostEditor({ showChart }: { showChart: boolean }) {
+  const [showShare, setShowShare] = useState(false);
+
   return (
     <>
-      <Suspense fallback={<div>Loading editor...</div>}>
-        <RichTextEditor />
-      </Suspense>
+      {/* Always rendered — do NOT lazy-load, it just adds a waterfall */}
+      <RichTextEditor />
 
+      {/* Conditional — lazy-load, code is only fetched if user toggles this on */}
       {showChart && (
         <Suspense fallback={<div>Loading chart...</div>}>
           <ChartDashboard />
+        </Suspense>
+      )}
+
+      {/* Interaction-triggered — lazy-load, code is fetched on button click */}
+      <button onClick={() => setShowShare(true)}>Share</button>
+      {showShare && (
+        <Suspense fallback={null}>
+          <ShareDialog onClose={() => setShowShare(false)} />
         </Suspense>
       )}
     </>
   );
 }
 ```
+
+| Scenario | Lazy-load? | Why |
+|----------|-----------|-----|
+| Always rendered on page load | No | Adds waterfall and loading flash without reducing initial work |
+| Behind a toggle, tab, or accordion | Yes | Code only loads if the user opens it |
+| Modal or dialog (opens on click) | Yes | Code only loads on interaction |
+| Below-fold section rarely scrolled to | Maybe | Only if the component is heavy (100KB+) and truly off-screen |
 
 ### Preload on Hover/Focus
 
@@ -1403,7 +1422,7 @@ When modifying existing code, preserve:
 
 ### JavaScript & React
 - [ ] Routes use `React.lazy()` and `<Suspense>`
-- [ ] Heavy components (modals, charts, editors) are lazy loaded
+- [ ] Heavy components behind interactions (modals, dialogs, conditional panels) are lazy loaded
 - [ ] `React.memo` on expensive components with stable props
 - [ ] Contexts are split by update frequency
 - [ ] Large lists (100+ items) are virtualized
