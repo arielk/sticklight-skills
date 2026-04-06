@@ -1,12 +1,35 @@
 ---
 title: Auth
 version: "1.0"
-description: Authentication and authorization patterns for React + Vite + Tailwind apps using Cloud Backend (Supabase). Use when implementing login, signup, password reset, session management, protected routes, Row Level Security, role-based access control, or user data tables.
+description: |
+  Authentication and authorization patterns for React + Vite + Tailwind
+  apps using Cloud Backend (Supabase). Use when implementing login,
+  signup, password reset, session management, protected routes, Row
+  Level Security (RLS), role-based access control, or user data tables.
+  Covers: profiles table with auto-creation trigger, user_roles table,
+  AuthContext with getUser() (not getSession()), ProtectedRoute
+  component, full auth pages (Login, Signup, Forgot Password, Reset
+  Password with expired link handling), logout, user-owned data
+  with RLS policies, and security best practices.
 ---
 
 # Authentication Skill for Sticklight Apps
 
 This skill helps you implement user authentication using Cloud Backend.
+
+## Your Task
+
+When this skill is active, follow these steps:
+
+1. **Assess the current state** — Check if the project already has auth setup (AuthContext, ProtectedRoute, auth pages, database tables)
+2. **Set up the database** — Create the `profiles` table with auto-creation trigger, and optionally the `user_roles` table
+3. **Create AuthContext** — Build `src/contexts/AuthContext.tsx` with `getUser()`, `signUp`, `signIn`, `signOut`, and `resetPassword`
+4. **Wrap the app** — Add `<AuthProvider>` to `src/main.tsx`
+5. **Create ProtectedRoute** — Build `src/components/ProtectedRoute.tsx` to guard authenticated pages
+6. **Build auth pages** — Create Login, Signup, Forgot Password, and Reset Password pages with proper error handling
+7. **Add logout** — Add a sign-out button/flow that clears the session and redirects to login
+8. **Secure data tables** — Enable RLS on every user-facing table, add `user_id` column, write proper policies
+9. **Verify** — Run through the Auth Checklist (section 10) before shipping
 
 ## Overview
 
@@ -724,6 +747,51 @@ const { data } = await supabase
 4. **Password requirements** — enforce minimum 6 characters (Supabase default). Add additional validation as needed.
 
 5. **Protect routes** — wrap authenticated pages with `ProtectedRoute` component.
+
+---
+
+## Process
+
+When adding auth to a project, follow this workflow:
+
+1. Check if Cloud Backend is enabled — if not, instruct the user to enable it
+2. Run the SQL to create `profiles` table, trigger, and RLS policies
+3. If roles are needed, run the SQL to create `user_roles` table with RLS
+4. Check if `AuthContext` exists — if not, create `src/contexts/AuthContext.tsx` with all auth functions
+5. Verify the app is wrapped with `<AuthProvider>` in `src/main.tsx`
+6. Check if `ProtectedRoute` exists — if not, create `src/components/ProtectedRoute.tsx`
+7. Create auth pages that are missing: Login, Signup, Forgot Password, Reset Password
+8. Ensure Reset Password handles expired/invalid links by parsing URL hash errors
+9. Add a logout button or flow to the authenticated layout
+10. For every new table with user-owned data, add `user_id` column, enable RLS, and write policies
+11. Verify: use `getUser()` (not `getSession()`) for all authorization checks
+12. Verify: roles are stored in `user_roles` table, never in `user_metadata`
+13. Run through the Auth Checklist (section 10)
+
+---
+
+## Output Format
+
+When generating auth setup for a project, include:
+
+1. **SQL migrations** — `profiles` table, trigger, RLS policies, and optionally `user_roles` table
+2. **`src/contexts/AuthContext.tsx`** — full context with `useAuth()` hook
+3. **`src/components/ProtectedRoute.tsx`** — route guard component
+4. **Auth pages** — Login, Signup, Forgot Password, Reset Password (each with loading state, error display, and success handling)
+5. **Logout component** — button or menu item that calls `signOut()` and redirects
+
+When generating a new user-owned data table, include:
+
+1. **SQL** — table definition with `user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE`
+2. **RLS** — `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` and policies using `(SELECT auth.uid()) = user_id`
+3. **Query example** — TypeScript code showing how to query with the user filter
+
+When modifying existing auth code, preserve:
+
+1. The `{ success: boolean; error?: string }` return pattern for all auth operations
+2. The `useCallback` wrapping on auth functions
+3. The `initialized` ref guard to prevent double-mount issues
+4. Null-safe `if (!supabase)` checks
 
 ---
 
