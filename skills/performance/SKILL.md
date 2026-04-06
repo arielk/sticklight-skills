@@ -52,6 +52,7 @@ Scan every file for these. Each links to a detailed section with the correct fix
 - Hero/logo images without `fetchPriority="high"` → delays LCP
 - `<img>` without `className="w-full h-auto"` → renders at fixed pixel size instead of responsive
 - Missing `alt` text → accessibility and SEO issue
+- Static image path like `src="/hero.jpg"` instead of importing from `src/assets/` → misses Vite hashing and optimization
 
 ### Fonts (section 2)
 - Google Fonts `<link>` without `preconnect` above it → slow DNS + connection
@@ -223,19 +224,21 @@ Always use `display=swap` to prevent invisible text during font loading (FOIT). 
 
 ### Self-Hosting Fonts (Best Performance)
 
-For maximum control, download fonts and serve them from your own domain. This eliminates the DNS lookup and connection to Google Fonts entirely:
+For maximum control, download fonts and serve them from your own domain. This eliminates the DNS lookup and connection to Google Fonts entirely.
+
+Place font files in `src/assets/fonts/` so Vite can hash them for long-term caching. Reference them in your CSS:
 
 ```css
 @font-face {
   font-family: 'Inter';
-  src: url('/fonts/Inter-Regular.woff2') format('woff2');
+  src: url('@/assets/fonts/Inter-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 ```
 
-Place font files in `public/fonts/` and preload the most critical weight:
+For the `preload` link in `index.html`, fonts need a stable URL — place a copy in `public/fonts/` or use the Vite-resolved path after build:
 
 ```html
 <link rel="preload" as="font" type="font/woff2" href="/fonts/Inter-Regular.woff2" crossorigin />
@@ -248,7 +251,7 @@ Load only the character ranges you need. A full font file with all Unicode block
 ```css
 @font-face {
   font-family: 'Inter';
-  src: url('/fonts/Inter-Regular-Latin.woff2') format('woff2');
+  src: url('@/assets/fonts/Inter-Regular-Latin.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -265,7 +268,7 @@ Use a variable font instead of loading separate files for each weight. One file 
 ```css
 @font-face {
   font-family: 'Inter';
-  src: url('/fonts/Inter-Variable.woff2') format('woff2-variations');
+  src: url('@/assets/fonts/Inter-Variable.woff2') format('woff2-variations');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -387,9 +390,35 @@ The `width` and `height` attributes tell the browser the aspect ratio for space 
 | Below the fold | `loading="lazy"` | Not visible until user scrolls |
 | Decorative/background | `loading="lazy"` | Not essential content |
 
+### Asset Placement: `src/assets/` vs `public/`
+
+In a Vite project, where you put assets determines how they're served:
+
+| Location | How to Reference | Vite Processing | Use For |
+|----------|-----------------|-----------------|---------|
+| `src/assets/` | `import logo from '@/assets/logo.svg'` then `src={logo}` | Hashed, bundled, optimized | Images, fonts, and files used in components |
+| `public/` | `src="/hero.jpg"` (absolute path) | Served as-is, no hashing | `favicon.svg`, `robots.txt`, `og-image.jpeg`, files that need a stable URL |
+
+Assets in `src/assets/` get content-hashed filenames (e.g., `logo-a1b2c3d4.svg`) enabling long-term caching. Assets in `public/` keep their original filename and are copied as-is to the build output.
+
+```tsx
+// Imported from src/assets/ — Vite hashes and optimizes
+import logo from '@/assets/images/logo.svg';
+import heroImage from '@/assets/images/hero.webp';
+
+// Referenced from public/ — stable URL, no processing
+<link rel="icon" href="/favicon.svg" />
+```
+
+**Rule of thumb:** if you `import` it in a component, put it in `src/assets/`. If it needs a fixed URL (meta tags, `index.html`, third-party references), put it in `public/`.
+
 ### Implementation Examples
 
 ```tsx
+import logo from '@/assets/images/logo.svg';
+import heroImage from '@/assets/images/hero.webp';
+import galleryImage from '@/assets/images/gallery-preview.webp';
+
 // Critical — Logo (always visible, affects LCP)
 <img
   src={logo}
@@ -424,13 +453,17 @@ The `width` and `height` attributes tell the browser the aspect ratio for space 
 
 ### Responsive Images with srcset
 
-Serve different image sizes based on the viewport to avoid downloading oversized images on mobile:
+Serve different image sizes based on the viewport to avoid downloading oversized images on mobile. Import each size from `src/assets/`:
 
 ```tsx
+import hero400 from '@/assets/images/hero-400.webp';
+import hero800 from '@/assets/images/hero-800.webp';
+import hero1200 from '@/assets/images/hero-1200.webp';
+
 <img
-  srcSet="/images/hero-400.webp 400w, /images/hero-800.webp 800w, /images/hero-1200.webp 1200w"
+  srcSet={`${hero400} 400w, ${hero800} 800w, ${hero1200} 1200w`}
   sizes="(max-width: 640px) 400px, (max-width: 1024px) 800px, 1200px"
-  src="/images/hero-800.webp"
+  src={hero800}
   alt="App builder dashboard"
   width={1200}
   height={630}
@@ -448,7 +481,7 @@ Serve different image sizes based on the viewport to avoid downloading oversized
 | **SVG** | Icons, logos, illustrations | Scalable, tiny file size, no quality loss |
 | **PNG** | Screenshots, images with text | Lossless, larger than WebP |
 
-Always compress images before adding to `public/`. Use tools like `sharp`, `squoosh`, or online services. Target file sizes:
+Always compress images before adding to the project. Place them in `src/assets/` for component use (Vite will hash and optimize them) or `public/` for stable-URL files like `og-image.jpeg`. Target file sizes:
 
 | Image Type | Target Size |
 |------------|-------------|
@@ -1483,8 +1516,9 @@ export default function Gallery() {
 **Optimized code:**
 
 ```tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import heroBanner from '@/assets/images/hero.webp';
 
 export default function Gallery() {
   const [images, setImages] = useState<{ id: string; url: string; alt: string }[]>([]);
@@ -1516,7 +1550,7 @@ export default function Gallery() {
   return (
     <div>
       <img
-        src="/hero.jpg"
+        src={heroBanner}
         alt="Gallery hero banner"
         width={1200}
         height={630}
@@ -1577,7 +1611,7 @@ useEffect(() => {
 ```
 
 **Changes made:**
-- Hero image: added `width`, `height`, `className="w-full h-auto"`, `loading="eager"`, `fetchPriority="high"`, descriptive `alt`
+- Hero image: imported from `src/assets/`, added `width`, `height`, `className="w-full h-auto"`, `loading="eager"`, `fetchPriority="high"`, descriptive `alt`
 - Gallery images: added `width`, `height`, `className="w-full h-auto"`, `loading="lazy"`, descriptive `alt`
 - List keys: changed from array index (`i`) to stable ID (`img.id`)
 - Supabase query: changed `select('*')` to `select('id, url, alt')`, added `range(0, 19)` pagination
