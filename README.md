@@ -46,6 +46,7 @@ All skills in this repo are written for:
 |-------|------|-------------|
 | SEO | [`skills/seo/SKILL.md`](./skills/seo/SKILL.md) | SEO for React + Vite + Tailwind SPAs — static fallbacks, `@unhead/react`, sitemaps, structured data, semantic HTML, performance |
 | Auth | [`skills/auth/SKILL.md`](./skills/auth/SKILL.md) | Authentication & authorization with Cloud Backend — email/password, protected routes, RLS, role-based access |
+| Performance | [`skills/performance/SKILL.md`](./skills/performance/SKILL.md) | Loading & runtime optimization — critical rendering path, fonts, image priority, code splitting, animations, React render performance, memory management, network/caching, Core Web Vitals, Supabase queries |
 
 ## Creating a New Skill
 
@@ -71,6 +72,8 @@ sticklight-skills/
 │   │   └── SKILL.md      # SEO skill
 │   ├── auth/
 │   │   └── SKILL.md      # Auth skill
+│   ├── performance/
+│   │   └── SKILL.md      # Performance skill
 │   └── template/
 │       └── SKILL.md      # Template for new skills
 └── README.md

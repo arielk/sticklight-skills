@@ -274,7 +274,11 @@ export function ProtectedRoute({ children, fallbackPath = '/login' }: ProtectedR
   }, [loading, user, navigate, fallbackPath]);
 
   if (loading) {
-    return null; // Or a loading component
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
+      </div>
+    );
   }
 
   if (!user) {
@@ -730,7 +734,7 @@ Query with user filter:
 ```typescript
 const { data } = await supabase
   .from('user_items')
-  .select('*')
+  .select('id, title, created_at')
   .eq('user_id', user.id);
 ```
 
