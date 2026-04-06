@@ -16,11 +16,10 @@ description: |
   responsive images with srcset, src/assets vs public), CSS performance
   (GPU-accelerated animations, transform/opacity, will-change, Tailwind
   CSS purge, content-visibility), passive event listeners, animation
-  best practices (CSS-only, prefers-reduced-motion), code splitting with
-  React.lazy and dynamic imports, skeleton screens, Vite bundle
-  optimization (manual chunks, tree shaking, compression), loading
-  sequence priority in index.html, performance budgets, and measuring
-  with Lighthouse and web-vitals.
+  best practices (CSS-only, prefers-reduced-motion), code splitting
+  with React.lazy and dynamic imports, skeleton screens, avoiding
+  heavy dependencies, loading sequence priority in index.html, and
+  measuring with Lighthouse and web-vitals.
 ---
 
 # Performance & Loading Optimization Skill for Sticklight Apps
@@ -73,8 +72,8 @@ Scan every file for these. Each links to a detailed section with the correct fix
 - Components that always render wrapped in `lazy()` → adds waterfall for no benefit
 - Modals/dialogs not lazy-loaded → code downloaded even if never opened
 - `<Suspense fallback={null}>` for page-level loading → blank screen, poor perceived perf
-- Full lodash imported instead of `lodash-es` or individual imports → 70KB+ added
-- `moment` instead of `date-fns` or `dayjs` → 300KB+ added
+- Full lodash imported instead of `lodash-es` or individual imports → 70KB+ added to bundle
+- `moment` instead of `date-fns` or `dayjs` → 300KB+ added to bundle
 - Full icon library instead of individual icon imports → large bundle
 
 ## Core Web Vitals Targets
@@ -696,57 +695,15 @@ const Settings = lazy(settingsImport);
 </Link>
 ```
 
-### Vite Chunk Configuration
+### Avoid Heavy Dependencies
 
-Configure manual chunks in `vite.config.ts` to separate vendor code from your app code:
-
-```ts
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
-export default defineConfig({
-  plugins: [react()],
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
-        },
-      },
-    },
-  },
-});
-```
-
-### Build Compression
-
-Enable gzip and Brotli compression for production builds:
-
-```ts
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import compression from 'vite-plugin-compression';
-
-export default defineConfig({
-  plugins: [
-    react(),
-    compression({ algorithm: 'gzip' }),
-    compression({ algorithm: 'brotliCompress' }),
-  ],
-});
-```
-
-### Audit Bundle Size
-
-Use `npx vite-bundle-visualizer` to see what's in your bundles and identify large dependencies. Common issues:
+Large dependencies inflate the initial JS bundle, directly hurting FCP and TBT. Use lightweight alternatives:
 
 | Problem | Solution |
 |---------|----------|
 | Full lodash imported | Use `lodash-es` or individual imports: `import debounce from 'lodash-es/debounce'` |
 | Moment.js (300KB+) | Replace with `date-fns` or `dayjs` (2-7KB) |
 | Full icon library imported | Import individual icons: `import { IconMenu } from '@tabler/icons-react'` |
-| Unused dependencies | Remove from `package.json`, verify with `npx depcheck` |
 
 ### Skeleton Screens
 
@@ -881,22 +838,10 @@ onCLS(console.log);
 
 ### Performance Budgets
 
-Define maximum sizes for your bundles:
-
-```ts
-// vite.config.ts
-export default defineConfig({
-  build: {
-    chunkSizeWarningLimit: 250,
-  },
-});
-```
+Target sizes to aim for when writing code and choosing dependencies:
 
 | Resource | Budget |
 |----------|--------|
-| Total JS (compressed) | < 200KB |
-| Total CSS (compressed) | < 50KB |
-| Largest single chunk | < 100KB |
 | Total font files | < 100KB |
 | Hero image | < 150KB |
 | Lighthouse Performance score | >= 90 |
@@ -1107,9 +1052,7 @@ export default function Gallery() {
 - [ ] Routes use `React.lazy()` and `<Suspense>`
 - [ ] Suspense fallbacks use skeleton screens for page-level loading
 - [ ] Heavy components behind interactions (modals, dialogs) are lazy loaded
-- [ ] Vite config splits vendor chunks
 - [ ] No oversized dependencies (moment.js, full lodash, full icon libraries)
-- [ ] Bundle size audited with `npx vite-bundle-visualizer`
 
 ### Measurement
 - [ ] Lighthouse performance score is 90+
