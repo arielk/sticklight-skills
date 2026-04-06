@@ -1085,7 +1085,7 @@ useEffect(() => {
 
   async function fetchData() {
     try {
-      const response = await fetch('/api/data', { signal: controller.signal });
+      const response = await fetch(`${supabaseUrl}/rest/v1/posts`, { signal: controller.signal });
       const data = await response.json();
       setData(data);
     } catch (err) {
@@ -1200,27 +1200,6 @@ export default defineConfig({
 });
 ```
 
-### Prefetch Next Page Resources
-
-When you can predict the user's next navigation, prefetch those resources:
-
-```tsx
-function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
-  const prefetch = useCallback(() => {
-    const link = document.createElement('link');
-    link.rel = 'prefetch';
-    link.href = to;
-    document.head.appendChild(link);
-  }, [to]);
-
-  return (
-    <Link to={to} onMouseEnter={prefetch} onFocus={prefetch}>
-      {children}
-    </Link>
-  );
-}
-```
-
 ---
 
 ## 13. Loading Sequence in index.html
@@ -1237,11 +1216,11 @@ Structure your `<head>` to load resources in optimal order. Critical resources f
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="dns-prefetch" href="https://your-project.supabase.co" />
 
-  <!-- 2. Preload critical assets (fonts, hero image) -->
+  <!-- 2. Preload critical assets (fonts) -->
   <link rel="preload" as="font" type="font/woff2" href="/fonts/Inter-Regular.woff2" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter&display=swap" />
 
-  <!-- 3. Critical CSS / font stylesheet -->
+  <!-- 3. Font stylesheet -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter&display=swap" />
 
   <!-- 4. Favicon -->
@@ -1254,12 +1233,18 @@ Structure your `<head>` to load resources in optimal order. Critical resources f
   <link rel="canonical" href="https://yourdomain.com/" />
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- 6. Loading shell — visible until React mounts (see section 1) -->
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif">
+      <div style="width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.6s linear infinite"></div>
+    </div>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
-  <!-- 6. Main app bundle (Vite injects this) -->
+  <!-- 7. Main app bundle (Vite injects this) -->
   <script type="module" src="/src/main.tsx"></script>
 
-  <!-- 7. Deferred analytics (load after everything else) -->
+  <!-- 8. Deferred analytics (load after everything else) -->
   <script>
     window.addEventListener('load', function() {
       setTimeout(function() {
@@ -1275,12 +1260,13 @@ Structure your `<head>` to load resources in optimal order. Critical resources f
 | Priority | What | Why |
 |----------|------|-----|
 | 1st | Preconnect / DNS prefetch | Establish connections before they're needed |
-| 2nd | Preload critical assets | Start downloading fonts and hero images early |
-| 3rd | CSS / font stylesheets | Render text correctly from the start |
+| 2nd | Preload critical assets | Start downloading fonts early |
+| 3rd | Font stylesheets | Render text correctly from the start |
 | 4th | Meta tags | SEO and browser hints |
-| 5th | App bundle | The actual application |
-| 6th | Eager images | Above-the-fold content |
-| 7th | Lazy images | Below-the-fold, loaded on scroll |
+| 5th | Loading shell | Immediate visual feedback inside `<div id="root">` |
+| 6th | App bundle | The actual application (Vite injects CSS alongside JS) |
+| 7th | Eager images | Above-the-fold content (rendered by React) |
+| 8th | Lazy images | Below-the-fold, loaded on scroll |
 | Last | Analytics / tracking | Non-critical, loaded after page is ready |
 
 ---
@@ -1317,10 +1303,12 @@ onINP(console.log);
 onCLS(console.log);
 ```
 
-Send metrics to your analytics for production monitoring:
+Send metrics to your analytics for production monitoring. Since a Vite SPA has no server-side API routes, send to a Supabase Edge Function or external analytics service:
 
 ```tsx
 import { onLCP, onINP, onCLS, onFCP, onTTFB, type Metric } from 'web-vitals';
+
+const VITALS_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vitals`;
 
 function sendToAnalytics(metric: Metric) {
   const body = JSON.stringify({
@@ -1330,9 +1318,9 @@ function sendToAnalytics(metric: Metric) {
     delta: metric.delta,
     id: metric.id,
   });
-  
+
   if (navigator.sendBeacon) {
-    navigator.sendBeacon('/api/vitals', body);
+    navigator.sendBeacon(VITALS_ENDPOINT, body);
   }
 }
 
@@ -1369,50 +1357,6 @@ Create a budget file for CI enforcement:
 
 ---
 
-## 15. robots.txt and Sitemap
-
-### robots.txt
-
-Create `public/robots.txt`:
-
-```
-User-agent: *
-Allow: /
-
-Sitemap: https://yourdomain.com/sitemap.xml
-
-# Block AI crawlers (optional)
-User-agent: GPTBot
-Disallow: /
-
-User-agent: CCBot
-Disallow: /
-
-User-agent: anthropic-ai
-Disallow: /
-
-User-agent: Google-Extended
-Disallow: /
-```
-
-### sitemap.xml
-
-Create `public/sitemap.xml` for static sites, or use a dynamic sitemap via Edge Function (see the SEO skill for full implementation):
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://yourdomain.com/</loc>
-    <lastmod>2025-01-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>
-```
-
----
-
 ## Process
 
 When optimizing a project's performance, follow this workflow:
@@ -1430,7 +1374,7 @@ When optimizing a project's performance, follow this workflow:
 11. Check Supabase queries — use column selection, pagination, and indexes
 12. Check for large dependencies — audit bundle with `npx vite-bundle-visualizer`
 13. Run Lighthouse again to measure improvement
-14. Run through the Performance Checklist (section 16)
+14. Run through the Performance Checklist (section 15)
 
 ---
 
@@ -1449,8 +1393,7 @@ When optimizing project-level performance, include:
 1. **`index.html` `<head>`** — preconnect, preload, deferred scripts in correct order
 2. **`vite.config.ts`** — manual chunks, compression, chunk size warning limit
 3. **Route-level code splitting** — `React.lazy()` and `<Suspense>` wrapping routes
-4. **`public/robots.txt`** — with sitemap reference
-5. **Lighthouse before/after scores** — to verify improvements
+4. **Lighthouse before/after scores** — to verify improvements
 
 When modifying existing code, preserve:
 
@@ -1462,7 +1405,7 @@ When modifying existing code, preserve:
 
 ---
 
-## 16. Performance Checklist
+## 15. Performance Checklist
 
 ### Critical Rendering Path
 - [ ] Loading shell in `index.html` inside `<div id="root">` so users see feedback before JS loads
@@ -1525,12 +1468,6 @@ When modifying existing code, preserve:
 - [ ] Bundle size audited with `npx vite-bundle-visualizer`
 - [ ] No oversized dependencies (moment.js, full lodash, full icon libraries)
 - [ ] Chunk size warning limit set in Vite config
-
-### SEO & Crawlability
-- [ ] `robots.txt` exists and is valid
-- [ ] `sitemap.xml` exists and is valid
-- [ ] `<link rel="canonical">` is set
-- [ ] `<meta name="theme-color">` is set
 
 ### Measurement
 - [ ] Lighthouse performance score is 90+
