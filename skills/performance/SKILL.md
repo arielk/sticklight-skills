@@ -2,51 +2,46 @@
 title: Performance
 version: "1.0"
 description: |
-  Performance and loading optimization for React + TypeScript + Vite +
-  Tailwind CSS apps built with sticklight.com. Use when optimizing page
-  load speed, reducing Core Web Vitals issues, improving First Contentful
-  Paint (FCP), Largest Contentful Paint (LCP), Cumulative Layout Shift
-  (CLS), or Total Blocking Time (TBT). Also use when diagnosing slow
-  renders, large bundles, memory leaks, or poor Lighthouse scores.
+  Core Web Vitals optimization for React + TypeScript + Vite + Tailwind CSS
+  apps built with sticklight.com. Use when optimizing page load speed,
+  improving Lighthouse scores, fixing First Contentful Paint (FCP),
+  Largest Contentful Paint (LCP), Cumulative Layout Shift (CLS), Total
+  Blocking Time (TBT), or Interaction to Next Paint (INP). Focused on
+  what search engines and users experience on page load.
   Covers: critical rendering path (loading shell, resource hints,
-  above-the-fold optimization), font loading strategy (preconnect, preload,
-  self-hosting, display=swap, subsetting, variable fonts), third-party script deferral (analytics, GTM, chat
-  widgets), image optimization (dimensions, loading priority, fetchPriority,
-  WebP/AVIF, responsive images with srcset), CSS performance (will-change,
-  GPU-accelerated animations, transform/opacity, Tailwind CSS purge),
-  event listener optimization (passive scroll, debounce, cleanup),
-  animation best practices (CSS-only, prefers-reduced-motion, requestAnimationFrame),
-  code splitting with React.lazy and dynamic imports, skeleton screens
-  for perceived performance, Vite bundle
-  optimization (manual chunks, tree shaking, compression), React render
-  performance (React.memo, useMemo, useCallback, virtualization, context
-  splitting), network optimization (resource hints, prefetch, dns-prefetch,
-  HTTP caching headers, service workers), data fetching performance
-  (Supabase query optimization, pagination, stale-while-revalidate,
-  optimistic updates), memory management (subscription cleanup, AbortController,
-  large object disposal), loading sequence priority in index.html,
-  performance budgets, and measuring with Lighthouse and web-vitals.
+  above-the-fold optimization), font loading strategy (preconnect,
+  preload, self-hosting, display=swap, subsetting, variable fonts),
+  third-party script deferral (analytics, GTM, chat widgets), image
+  optimization (dimensions, loading priority, fetchPriority, WebP/AVIF,
+  responsive images with srcset, src/assets vs public), CSS performance
+  (GPU-accelerated animations, transform/opacity, will-change, Tailwind
+  CSS purge, content-visibility), passive event listeners, animation
+  best practices (CSS-only, prefers-reduced-motion), code splitting with
+  React.lazy and dynamic imports, skeleton screens, Vite bundle
+  optimization (manual chunks, tree shaking, compression), loading
+  sequence priority in index.html, performance budgets, and measuring
+  with Lighthouse and web-vitals.
 ---
 
 # Performance & Loading Optimization Skill for Sticklight Apps
 
-You are a performance auditor that identifies and fixes loading, rendering, and runtime performance issues in React + Vite + Tailwind CSS apps. When given code to optimize, scan for the anti-patterns listed below, fix each one, preserve the component's behavior, and verify the result against Core Web Vitals targets.
+You are a performance auditor that identifies and fixes Core Web Vitals issues in React + Vite + Tailwind CSS apps. When given code to optimize, scan for the anti-patterns listed below, fix each one, preserve the component's behavior, and verify the result against Lighthouse targets. Focus on what search engines and users experience when the page loads.
 
 ## Your Task
 
 When this skill is active, follow these steps:
 
 1. **Scan for anti-patterns** — Read the code and identify every performance issue from the Anti-Patterns Quick Reference below
-2. **Fix each issue** — Apply the correct pattern from the detailed sections (1–14)
+2. **Fix each issue** — Apply the correct pattern from the detailed sections (1–11)
 3. **Preserve behavior** — Keep the component's functionality, props API, and routing intact
-4. **Self-audit** — After fixing, ask: "What performance issues remain in this code?" Answer briefly, then fix any remaining issues
-5. **Verify** — Run through the Performance Checklist (section 15) before shipping
+4. **Self-audit** — After fixing, ask: "What Core Web Vitals issues remain in this code?" Answer briefly, then fix any remaining issues
+5. **Verify** — Run through the Performance Checklist (section 12) before shipping
 
 ## Anti-Patterns Quick Reference
 
 Scan every file for these. Each links to a detailed section with the correct fix.
 
-### Images (section 4)
+### Images (section 4) — affects CLS, LCP
 - `<img>` without `width` and `height` → causes CLS
 - `<img>` without `loading` attribute → all images load eagerly by default
 - Hero/logo images without `fetchPriority="high"` → delays LCP
@@ -54,51 +49,30 @@ Scan every file for these. Each links to a detailed section with the correct fix
 - Missing `alt` text → accessibility and SEO issue
 - Static image path like `src="/hero.jpg"` instead of importing from `src/assets/` → misses Vite hashing and optimization
 
-### Fonts (section 2)
+### Fonts (section 2) — affects FCP, LCP, CLS
 - Google Fonts `<link>` without `preconnect` above it → slow DNS + connection
 - Missing `display=swap` or `font-display: swap` → invisible text during load (FOIT)
 - Multiple static font weight files when a variable font exists → unnecessary requests
 - Font files in formats other than woff2 → larger downloads
 
-### Scripts (section 3)
+### Scripts (section 3) — affects FCP, TBT, LCP
 - Analytics/GTM loaded in `<head>` without deferral → blocks rendering
 - Chat widgets or social embeds loaded on page init → hundreds of KB before interaction
 
-### CSS & Animations (section 5)
+### CSS & Animations (section 5) — affects INP, TBT, CLS
 - Animating `top`, `left`, `width`, `height`, `margin` → triggers layout on every frame
 - `will-change` on many elements or left permanently → wastes GPU memory
-- Missing `@media (prefers-reduced-motion: reduce)` → accessibility issue
-- Tailwind dynamic classes via string interpolation → purge can't detect them
+- Missing `@media (prefers-reduced-motion: reduce)` → Lighthouse accessibility flag
+- Tailwind dynamic classes via string interpolation → purge can't detect them, inflates CSS
 
-### Event Listeners (section 6)
-- `addEventListener('scroll', handler)` without `{ passive: true }` → blocks scrolling
-- Event listeners without cleanup in `useEffect` return → memory leak
-- Expensive scroll/resize handlers without debounce or throttle → jank
+### Event Listeners (section 6) — affects INP, TBT
+- `addEventListener('scroll', handler)` without `{ passive: true }` → Lighthouse flags this directly
 
-### React (section 9)
-- Expensive component without `React.memo` → re-renders on every parent render
-- Inline object/array/function in JSX props → new reference every render, defeats memo
-- Single large context for mixed-frequency state → all consumers re-render on any change
-- Long list (100+ items) rendered without virtualization → large DOM, slow paint
-- Array index as `key` on a list that reorders → incorrect reconciliation
-
-### Code Splitting (section 8)
+### Code Splitting & Bundle (section 7) — affects FCP, TBT, LCP
 - All routes in one bundle (no `React.lazy`) → full app downloads on first page
 - Components that always render wrapped in `lazy()` → adds waterfall for no benefit
 - Modals/dialogs not lazy-loaded → code downloaded even if never opened
-- `<Suspense fallback={null}>` for page-level loading → blank screen
-
-### Data Fetching (section 10)
-- `supabase.from('table').select('*')` → fetches unnecessary columns
-- Loading all rows without pagination → slow queries, large payloads
-- No database indexes on filtered/sorted columns → full table scans
-
-### Memory (section 11)
-- `fetch()` without `AbortController` in `useEffect` → orphaned requests on unmount
-- Supabase realtime subscription without `removeChannel` cleanup → leak
-- `setInterval` / `setTimeout` without `clearInterval` / `clearTimeout` cleanup → leak
-
-### Bundle (section 8)
+- `<Suspense fallback={null}>` for page-level loading → blank screen, poor perceived perf
 - Full lodash imported instead of `lodash-es` or individual imports → 70KB+ added
 - `moment` instead of `date-fns` or `dayjs` → 300KB+ added
 - Full icon library instead of individual icon imports → large bundle
@@ -119,6 +93,8 @@ Scan every file for these. Each links to a detailed section with the correct fix
 ## 1. Critical Rendering Path
 
 The critical rendering path is the sequence of steps the browser takes to convert HTML, CSS, and JavaScript into pixels on screen. Minimize the work the browser must do before the first paint.
+
+**Affects:** FCP, LCP
 
 ### Loading Shell (SPA-Specific)
 
@@ -199,6 +175,8 @@ function LandingPage() {
 ---
 
 ## 2. Font Loading Strategy
+
+**Affects:** FCP, LCP, CLS
 
 ### Preconnect to Font Servers
 
@@ -299,6 +277,8 @@ Limit web fonts to reduce download size and prevent layout shift:
 
 ## 3. Third-Party Scripts (Analytics, GTM)
 
+**Affects:** FCP, TBT, LCP
+
 ### Defer Non-Critical Scripts
 
 Load analytics and tracking scripts AFTER the page is fully loaded. Never let them block rendering:
@@ -317,12 +297,6 @@ Load analytics and tracking scripts AFTER the page is fully loaded. Never let th
   });
 </script>
 ```
-
-### Why This Matters
-
-- Faster First Contentful Paint (FCP) — the browser renders content before loading tracking code
-- Lower Total Blocking Time (TBT) — the main thread is free for user interactions
-- Better experience on slow connections — users see the page first, analytics load silently
 
 ### Script Loading Attributes
 
@@ -364,6 +338,8 @@ function LazyMap() {
 ---
 
 ## 4. Image Optimization
+
+**Affects:** CLS, LCP
 
 ### Always Include Dimensions
 
@@ -493,23 +469,7 @@ Always compress images before adding to the project. Place them in `src/assets/`
 
 ## 5. CSS Performance
 
-### Will-Change Property
-
-Hint the browser about upcoming animations to optimize rendering. Use sparingly — overuse wastes GPU memory:
-
-```tsx
-// For animated elements (marquee, sliders, carousels)
-style={{ willChange: 'transform' }}
-
-// For dynamic content (canvas, live updates)
-style={{ willChange: 'contents' }}
-```
-
-Remove `will-change` when the animation is done if it's a one-time transition:
-
-```tsx
-onTransitionEnd={() => ref.current.style.willChange = 'auto'}
-```
+**Affects:** INP, TBT, CLS, FCP
 
 ### GPU-Accelerated Animations
 
@@ -540,6 +500,21 @@ Use `transform` and `opacity` for animations. These run on the GPU compositor th
 | `margin`, `padding` | `transform: translate()` |
 | `font-size` | `transform: scale()` |
 | `border-width` | `box-shadow` or `outline` |
+
+### Will-Change Property
+
+Hint the browser about upcoming animations to optimize rendering. Use sparingly — overuse wastes GPU memory:
+
+```tsx
+// For animated elements (marquee, sliders, carousels)
+style={{ willChange: 'transform' }}
+```
+
+Remove `will-change` when the animation is done if it's a one-time transition:
+
+```tsx
+onTransitionEnd={() => ref.current.style.willChange = 'auto'}
+```
 
 ### Tailwind CSS Production Purge
 
@@ -588,11 +563,24 @@ Use CSS containment to limit the scope of browser layout, style, and paint calcu
 
 `content-visibility: auto` is especially powerful for long pages — the browser skips rendering off-screen sections entirely and uses the intrinsic size for scroll calculations.
 
+### Reduce Motion Preference
+
+Respect the user's motion preferences. Lighthouse flags missing reduced-motion support:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+```
+
 ---
 
-## 6. Event Listener Optimization
+## 6. Passive Event Listeners
 
-### Passive Scroll Listeners
+**Affects:** INP, TBT — Lighthouse flags this directly
 
 Never block scroll events. Passive listeners tell the browser the handler will not call `preventDefault()`, so scrolling can proceed without waiting:
 
@@ -600,13 +588,11 @@ Never block scroll events. Passive listeners tell the browser the handler will n
 // Correct — passive, non-blocking
 window.addEventListener('scroll', handleScroll, { passive: true });
 
-// Wrong — blocks scrolling until handler completes
+// Wrong — Lighthouse will flag this
 window.addEventListener('scroll', handleScroll);
 ```
 
-### Cleanup on Unmount
-
-Always remove event listeners to prevent memory leaks:
+Always add cleanup to prevent listener accumulation:
 
 ```tsx
 useEffect(() => {
@@ -619,146 +605,11 @@ useEffect(() => {
 }, []);
 ```
 
-### Debounce Expensive Handlers
-
-For resize and scroll handlers that trigger expensive calculations, debounce them:
-
-```tsx
-import { useCallback, useEffect, useRef } from 'react';
-
-function useDebounce(fn: () => void, delay: number) {
-  const timeout = useRef<ReturnType<typeof setTimeout>>();
-
-  return useCallback(() => {
-    clearTimeout(timeout.current);
-    timeout.current = setTimeout(fn, delay);
-  }, [fn, delay]);
-}
-
-const handleResize = useDebounce(() => {
-  // expensive layout calculation
-}, 150);
-
-useEffect(() => {
-  window.addEventListener('resize', handleResize, { passive: true });
-  return () => window.removeEventListener('resize', handleResize);
-}, [handleResize]);
-```
-
-### Throttle vs Debounce
-
-| Pattern | Behavior | Use For |
-|---------|----------|---------|
-| **Debounce** | Waits until activity stops, then fires once | Search input, resize calculations, form validation |
-| **Throttle** | Fires at most once per interval | Scroll position tracking, infinite scroll, progress bars |
-
-```tsx
-function useThrottle(fn: () => void, interval: number) {
-  const lastRun = useRef(0);
-  const timeout = useRef<ReturnType<typeof setTimeout>>();
-
-  return useCallback(() => {
-    const now = Date.now();
-    const remaining = interval - (now - lastRun.current);
-
-    if (remaining <= 0) {
-      lastRun.current = now;
-      fn();
-    } else {
-      clearTimeout(timeout.current);
-      timeout.current = setTimeout(() => {
-        lastRun.current = Date.now();
-        fn();
-      }, remaining);
-    }
-  }, [fn, interval]);
-}
-```
-
 ---
 
-## 7. Animation Best Practices
+## 7. Code Splitting & Bundle Size
 
-### CSS-Only Animations
-
-Prefer CSS animations over JavaScript for simple movements. CSS animations run on the compositor thread and are more efficient:
-
-```css
-.marquee-content {
-  animation: marquee-scroll 20s linear infinite;
-}
-
-@keyframes marquee-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-33.33%); }
-}
-```
-
-### Reduce Motion Preference
-
-Respect the user's motion preferences. Some users experience motion sickness or have vestibular disorders:
-
-```css
-@media (prefers-reduced-motion: reduce) {
-  .marquee-content {
-    animation: none;
-  }
-
-  * {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-  }
-}
-```
-
-In React, check programmatically:
-
-```tsx
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-```
-
-### Use a Custom Hook for Motion Preference
-
-```tsx
-import { useState, useEffect } from 'react';
-
-function usePrefersReducedMotion() {
-  const [prefersReduced, setPrefersReduced] = useState(
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-
-  return prefersReduced;
-}
-```
-
-### requestAnimationFrame for Complex Animations
-
-When JavaScript-driven animation is necessary, always use `requestAnimationFrame` instead of `setInterval` or `setTimeout`:
-
-```tsx
-useEffect(() => {
-  let frameId: number;
-
-  function animate() {
-    // animation logic — runs at display refresh rate
-    frameId = requestAnimationFrame(animate);
-  }
-
-  frameId = requestAnimationFrame(animate);
-  return () => cancelAnimationFrame(frameId);
-}, []);
-```
-
----
-
-## 8. Code Splitting
+**Affects:** FCP, TBT, LCP
 
 ### Route-Level Splitting with React.lazy
 
@@ -897,19 +748,16 @@ Use `npx vite-bundle-visualizer` to see what's in your bundles and identify larg
 | Full icon library imported | Import individual icons: `import { IconMenu } from '@tabler/icons-react'` |
 | Unused dependencies | Remove from `package.json`, verify with `npx depcheck` |
 
-### Skeleton Screens (Perceived Performance)
+### Skeleton Screens
 
-Use skeleton screens instead of spinners for `<Suspense>` fallbacks and data loading states. Skeletons mimic the shape of the incoming content, making the app feel faster because users perceive progress rather than waiting:
+Use skeleton screens instead of spinners for `<Suspense>` fallbacks. Skeletons mimic the shape of the incoming content, reducing perceived load time:
 
 ```tsx
 function PageSkeleton() {
   return (
     <div className="animate-pulse space-y-4 p-6">
-      {/* Nav placeholder */}
       <div className="h-8 w-48 rounded bg-gray-200" />
-      {/* Hero placeholder */}
       <div className="h-64 w-full rounded-lg bg-gray-200" />
-      {/* Content lines */}
       <div className="space-y-2">
         <div className="h-4 w-full rounded bg-gray-200" />
         <div className="h-4 w-5/6 rounded bg-gray-200" />
@@ -919,375 +767,18 @@ function PageSkeleton() {
   );
 }
 
-// Use as Suspense fallback
 <Suspense fallback={<PageSkeleton />}>
   <Dashboard />
 </Suspense>
 ```
 
-| Approach | Perceived Speed | CLS Risk | Use When |
-|----------|----------------|----------|----------|
-| Spinner | Slow — user sees no content | Low (fixed size) | Short, unpredictable waits (< 300ms) |
-| Skeleton | Fast — user sees content shape | Low if dimensions match | Page loads, data fetching, route transitions |
-| Blank / `null` | Worst — nothing visible | None | Never (avoid for any user-facing state) |
-
-Match skeleton dimensions to the real content to avoid layout shift when the actual content replaces the skeleton. Tailwind's `animate-pulse` handles the shimmer animation automatically.
+Match skeleton dimensions to the real content to avoid CLS when the actual content replaces the skeleton.
 
 ---
 
-## 9. React Render Performance
+## 8. Loading Sequence in index.html
 
-### Avoid Unnecessary Re-Renders
-
-Use `React.memo` for components that receive stable props:
-
-```tsx
-const ExpensiveList = React.memo(function ExpensiveList({ items }: { items: Item[] }) {
-  return (
-    <ul>
-      {items.map(item => <li key={item.id}>{item.name}</li>)}
-    </ul>
-  );
-});
-```
-
-Use `useMemo` for expensive calculations:
-
-```tsx
-const sortedItems = useMemo(
-  () => [...items].sort((a, b) => a.name.localeCompare(b.name)),
-  [items]
-);
-```
-
-Use `useCallback` for functions passed as props:
-
-```tsx
-const handleClick = useCallback((id: string) => {
-  setSelected(id);
-}, []);
-```
-
-### Context Splitting
-
-A single large context causes all consumers to re-render when any value changes. Split contexts by update frequency:
-
-```tsx
-// Bad — everything re-renders when count changes
-const AppContext = createContext({ user: null, theme: 'light', count: 0 });
-
-// Good — split by update frequency
-const UserContext = createContext<User | null>(null);
-const ThemeContext = createContext<'light' | 'dark'>('light');
-const CounterContext = createContext({ count: 0, increment: () => {} });
-```
-
-For state that changes frequently but is consumed by many components, consider a selector-based store like Zustand:
-
-```tsx
-import { create } from 'zustand';
-
-interface AppStore {
-  count: number;
-  increment: () => void;
-}
-
-const useStore = create<AppStore>((set) => ({
-  count: 0,
-  increment: () => set((s) => ({ count: s.count + 1 })),
-}));
-
-// Only re-renders when count changes
-const count = useStore((s) => s.count);
-```
-
-### Virtualize Long Lists
-
-For lists with 100+ items, use a virtualization library to only render visible items:
-
-```tsx
-import { useVirtualizer } from '@tanstack/react-virtual';
-
-function VirtualList({ items }: { items: Item[] }) {
-  const parentRef = useRef<HTMLDivElement>(null);
-
-  const virtualizer = useVirtualizer({
-    count: items.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 50,
-  });
-
-  return (
-    <div ref={parentRef} style={{ height: '400px', overflow: 'auto' }}>
-      <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
-        {virtualizer.getVirtualItems().map(virtualRow => (
-          <div
-            key={virtualRow.key}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: `${virtualRow.size}px`,
-              transform: `translateY(${virtualRow.start}px)`,
-            }}
-          >
-            {items[virtualRow.index].name}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-```
-
-### Keys and Reconciliation
-
-Always use stable, unique keys for list items. Never use array index as key for lists that can reorder, filter, or have items added/removed:
-
-```tsx
-// Bad — index keys cause incorrect reconciliation on reorder
-{items.map((item, i) => <Card key={i} item={item} />)}
-
-// Good — stable ID keys
-{items.map(item => <Card key={item.id} item={item} />)}
-```
-
----
-
-## 10. Data Fetching Performance
-
-### Supabase: Select Only Needed Columns
-
-Don't use `select('*')` when you only need a few fields:
-
-```tsx
-// Bad — fetches all columns
-const { data } = await supabase.from('posts').select('*');
-
-// Good — fetches only what's needed
-const { data } = await supabase.from('posts').select('id, title, slug, published_at');
-```
-
-### Paginate Large Datasets
-
-Never load all rows at once. Use `range()` for pagination:
-
-```tsx
-const PAGE_SIZE = 20;
-
-const { data, count } = await supabase
-  .from('posts')
-  .select('id, title, slug', { count: 'exact' })
-  .order('published_at', { ascending: false })
-  .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-```
-
-### Add Database Indexes
-
-For columns you filter or sort by frequently, add indexes:
-
-```sql
-CREATE INDEX idx_posts_published_at ON posts (published_at DESC);
-CREATE INDEX idx_posts_user_id ON posts (user_id);
-CREATE INDEX idx_posts_slug ON posts (slug);
-```
-
-### Stale-While-Revalidate Pattern
-
-Show cached data immediately while fetching fresh data in the background. This dramatically improves perceived performance:
-
-```tsx
-import { useState, useEffect, useRef } from 'react';
-
-function useStaleWhileRevalidate<T>(key: string, fetcher: () => Promise<T>) {
-  const [data, setData] = useState<T | null>(() => {
-    const cached = sessionStorage.getItem(key);
-    return cached ? JSON.parse(cached) : null;
-  });
-  const [loading, setLoading] = useState(!data);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const fresh = await fetcher();
-        if (!cancelled) {
-          setData(fresh);
-          sessionStorage.setItem(key, JSON.stringify(fresh));
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => { cancelled = true; };
-  }, [key]);
-
-  return { data, loading };
-}
-```
-
-### Optimistic Updates
-
-For mutations, update the UI immediately and roll back on failure:
-
-```tsx
-async function toggleFavorite(postId: string) {
-  // Optimistic: update UI immediately
-  setFavorites(prev => {
-    const isFav = prev.includes(postId);
-    return isFav ? prev.filter(id => id !== postId) : [...prev, postId];
-  });
-
-  const { error } = await supabase
-    .from('favorites')
-    .upsert({ user_id: user.id, post_id: postId });
-
-  if (error) {
-    // Rollback on failure
-    setFavorites(prev => {
-      const isFav = prev.includes(postId);
-      return isFav ? prev.filter(id => id !== postId) : [...prev, postId];
-    });
-  }
-}
-```
-
----
-
-## 11. Memory Management
-
-### AbortController for Fetch Requests
-
-Cancel in-flight requests when a component unmounts or when a new request supersedes the old one:
-
-```tsx
-useEffect(() => {
-  const controller = new AbortController();
-
-  async function fetchData() {
-    try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/posts`, { signal: controller.signal });
-      const data = await response.json();
-      setData(data);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      console.error('Fetch failed:', err);
-    }
-  }
-
-  fetchData();
-  return () => controller.abort();
-}, []);
-```
-
-### Subscription Cleanup
-
-Always clean up Supabase realtime subscriptions and other event sources:
-
-```tsx
-useEffect(() => {
-  if (!supabase) return;
-
-  const channel = supabase
-    .channel('posts-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, handleChange)
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, []);
-```
-
-### Timer and Interval Cleanup
-
-Always clear timers on unmount:
-
-```tsx
-useEffect(() => {
-  const interval = setInterval(() => {
-    // polling logic
-  }, 5000);
-
-  return () => clearInterval(interval);
-}, []);
-```
-
-### Detecting Memory Leaks
-
-Common signs and their causes:
-
-| Symptom | Likely Cause |
-|---------|-------------|
-| "Can't perform a React state update on an unmounted component" | Missing cleanup in useEffect |
-| Page gets slower over time | Event listeners accumulating without removal |
-| Browser tab memory grows continuously | Realtime subscriptions or intervals not cleaned up |
-| Large DOM node count | Lists rendered without virtualization |
-
-Use Chrome DevTools Memory tab to take heap snapshots and compare them over time.
-
----
-
-## 12. Network & Caching
-
-### HTTP Caching Headers
-
-Configure your hosting platform to serve proper cache headers:
-
-| Resource Type | Cache-Control | Why |
-|---------------|---------------|-----|
-| HTML (`index.html`) | `no-cache` | Always check for updates |
-| JS/CSS (hashed by Vite) | `max-age=31536000, immutable` | Content-addressed, never changes |
-| Fonts | `max-age=31536000, immutable` | Rarely change |
-| Images | `max-age=86400` (1 day) to `max-age=31536000` | Depends on change frequency |
-| API responses | `no-store` or `max-age=60` | Depends on data freshness needs |
-
-Vite automatically adds content hashes to JS and CSS filenames (e.g., `main-a1b2c3d4.js`), making them safe to cache forever.
-
-### Service Worker for Offline/Cache-First
-
-For apps that benefit from offline support or aggressive caching, use Workbox with the Vite PWA plugin:
-
-```ts
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
-
-export default defineConfig({
-  plugins: [
-    react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com/,
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'google-fonts-stylesheets' },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
-        ],
-      },
-    }),
-  ],
-});
-```
-
----
-
-## 13. Loading Sequence in index.html
+**Affects:** FCP, LCP
 
 Structure your `<head>` to load resources in optimal order. Critical resources first, non-critical last:
 
@@ -1356,7 +847,7 @@ Structure your `<head>` to load resources in optimal order. Critical resources f
 
 ---
 
-## 14. Measuring Performance
+## 9. Measuring Performance
 
 ### Lighthouse
 
@@ -1388,48 +879,18 @@ onINP(console.log);
 onCLS(console.log);
 ```
 
-Send metrics to your analytics for production monitoring. Since a Vite SPA has no server-side API routes, send to a Supabase Edge Function or external analytics service:
-
-```tsx
-import { onLCP, onINP, onCLS, onFCP, onTTFB, type Metric } from 'web-vitals';
-
-const VITALS_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vitals`;
-
-function sendToAnalytics(metric: Metric) {
-  const body = JSON.stringify({
-    name: metric.name,
-    value: metric.value,
-    rating: metric.rating,
-    delta: metric.delta,
-    id: metric.id,
-  });
-
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon(VITALS_ENDPOINT, body);
-  }
-}
-
-onLCP(sendToAnalytics);
-onINP(sendToAnalytics);
-onCLS(sendToAnalytics);
-onFCP(sendToAnalytics);
-onTTFB(sendToAnalytics);
-```
-
 ### Performance Budgets
 
-Define maximum sizes for your bundles and enforce them in CI:
+Define maximum sizes for your bundles:
 
 ```ts
 // vite.config.ts
 export default defineConfig({
   build: {
-    chunkSizeWarningLimit: 250, // warn if a chunk exceeds 250KB
+    chunkSizeWarningLimit: 250,
   },
 });
 ```
-
-Create a budget file for CI enforcement:
 
 | Resource | Budget |
 |----------|--------|
@@ -1448,11 +909,11 @@ When optimizing a project's performance, follow this workflow:
 
 1. Read the code carefully
 2. Scan for every anti-pattern in the Anti-Patterns Quick Reference
-3. Fix each issue using the patterns from sections 1–14
+3. Fix each issue using the patterns from sections 1–9
 4. Ensure the revised code preserves existing behavior, props interfaces, and routing
-5. **Self-audit** — ask: "What performance issues remain in this code?" Answer with a brief list of remaining tells
+5. **Self-audit** — ask: "What Core Web Vitals issues remain in this code?" Answer with a brief list
 6. Fix any remaining issues found in the self-audit
-7. Run through the Performance Checklist (section 15)
+7. Run through the Performance Checklist (section 12)
 8. Present the final optimized code
 
 ---
@@ -1462,17 +923,16 @@ When optimizing a project's performance, follow this workflow:
 Provide:
 
 1. **Optimized code** — the full rewritten component or file
-2. **"What performance issues remain?"** — brief bullet list of any remaining concerns (or "None" if clean)
+2. **"What Core Web Vitals issues remain?"** — brief bullet list of any remaining concerns (or "None" if clean)
 3. **Final revision** — fix any issues found in step 2
-4. **Summary of changes** — brief list of what was fixed and why
+4. **Summary of changes** — brief list of what was fixed and which CWV metric it improves
 
 When modifying existing code, preserve:
 
 1. Existing component API / props interfaces
 2. Existing routing structure and paths
 3. Existing `useEffect` cleanup patterns (don't remove existing cleanups)
-4. Existing `useCallback` / `useMemo` usage (don't remove existing memoization)
-5. Existing Tailwind class names (don't remove classes that may be used conditionally)
+4. Existing Tailwind class names (don't remove classes that may be used conditionally)
 
 ---
 
@@ -1502,7 +962,7 @@ export default function Gallery() {
   return (
     <div>
       <img src="/hero.jpg" alt="" />
-      <div style={{ animation: 'slideIn 0.3s' }}>
+      <div style={{ animation: 'slideIn 0.3s', left: '100px' }}>
         <h2>Gallery</h2>
       </div>
       {images.map((img, i) => (
@@ -1524,18 +984,10 @@ export default function Gallery() {
   const [images, setImages] = useState<{ id: string; url: string; alt: string }[]>([]);
 
   useEffect(() => {
-    const controller = new AbortController();
-
     supabase
       .from('images')
       .select('id, url, alt')
-      .then(({ data }) => {
-        if (!controller.signal.aborted) {
-          setImages(data || []);
-        }
-      });
-
-    return () => controller.abort();
+      .then(({ data }) => setImages(data || []));
   }, []);
 
   useEffect(() => {
@@ -1577,56 +1029,46 @@ export default function Gallery() {
 }
 ```
 
-**What performance issues remain?**
-- No `prefers-reduced-motion` check for the slide-in animation
-- Gallery list is not virtualized (fine for small datasets, would need virtualization at 100+ images)
-- No pagination on the Supabase query (loads all rows)
+**What Core Web Vitals issues remain?**
+- No `prefers-reduced-motion` for the slide-in animation (Lighthouse accessibility)
+- Inline `left: '100px'` animation was removed but CSS class should use `transform` not `left`
 
-**Final revision** — add reduced-motion and pagination:
-
-```tsx
-useEffect(() => {
-  const controller = new AbortController();
-
-  supabase
-    .from('images')
-    .select('id, url, alt', { count: 'exact' })
-    .range(0, 19)
-    .then(({ data }) => {
-      if (!controller.signal.aborted) {
-        setImages(data || []);
-      }
-    });
-
-  return () => controller.abort();
-}, []);
-```
+**Final revision** — add reduced-motion and verify CSS uses transform:
 
 ```css
+.animate-slide-in {
+  transform: translateX(100px);
+  animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+  to { transform: translateX(0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-slide-in {
     animation: none;
+    transform: none;
   }
 }
 ```
 
 **Changes made:**
-- Hero image: imported from `src/assets/`, added `width`, `height`, `className="w-full h-auto"`, `loading="eager"`, `fetchPriority="high"`, descriptive `alt`
-- Gallery images: added `width`, `height`, `className="w-full h-auto"`, `loading="lazy"`, descriptive `alt`
-- List keys: changed from array index (`i`) to stable ID (`img.id`)
-- Supabase query: changed `select('*')` to `select('id, url, alt')`, added `range(0, 19)` pagination
-- Scroll listener: added `{ passive: true }`, added cleanup on unmount
-- Fetch cleanup: added `AbortController` to cancel on unmount
-- Animation: moved inline style to Tailwind class, added `prefers-reduced-motion` media query
+- **CLS fix:** Hero image — added `width`, `height`, `className="w-full h-auto"`, descriptive `alt`
+- **LCP fix:** Hero image — added `loading="eager"`, `fetchPriority="high"`, imported from `src/assets/`
+- **CLS fix:** Gallery images — added `width`, `height`, `className="w-full h-auto"`, `loading="lazy"`, descriptive `alt`
+- **INP/TBT fix:** Scroll listener — added `{ passive: true }`, added cleanup on unmount
+- **TBT fix:** Animation — replaced `left` (layout-triggering) with `transform: translateX()` (GPU-accelerated)
+- **Accessibility:** Added `@media (prefers-reduced-motion: reduce)`
 
 ---
 
-## 15. Performance Checklist
+## 12. Performance Checklist
 
 ### Critical Rendering Path
-- [ ] Loading shell in `index.html` inside `<div id="root">` so users see feedback before JS loads
+- [ ] Loading shell in `index.html` inside `<div id="root">`
 - [ ] Resource hints (`preconnect`, `dns-prefetch`, `preload`) are in `<head>`
-- [ ] `index.html` loads resources in optimal order (section 13)
+- [ ] `index.html` loads resources in optimal order (section 8)
 - [ ] No render-blocking third-party scripts in `<head>`
 
 ### Fonts
@@ -1644,6 +1086,7 @@ useEffect(() => {
 - [ ] All images have descriptive `alt` text
 - [ ] Images are compressed (WebP or AVIF where possible)
 - [ ] Responsive images use `srcset` and `sizes` for large hero/banner images
+- [ ] Component images imported from `src/assets/` (not hardcoded paths)
 
 ### Third-Party Scripts
 - [ ] Analytics/tracking scripts are deferred (load after page ready)
@@ -1652,40 +1095,22 @@ useEffect(() => {
 
 ### CSS & Animations
 - [ ] Animations use `transform`/`opacity` only (no `top`/`left`/`width`/`height`)
-- [ ] `will-change` hints on continuously animated elements (used sparingly)
+- [ ] `will-change` used sparingly and removed after one-time transitions
 - [ ] `prefers-reduced-motion` is respected
 - [ ] Tailwind CSS purge paths cover all files
 - [ ] Production CSS < 30KB
 
-### JavaScript & React
+### Event Listeners
+- [ ] Scroll/touch listeners are `{ passive: true }`
+
+### Code Splitting & Bundle
 - [ ] Routes use `React.lazy()` and `<Suspense>`
-- [ ] Suspense fallbacks use skeleton screens (not spinners or blank) for page-level loading
-- [ ] Heavy components behind interactions (modals, dialogs, conditional panels) are lazy loaded
-- [ ] `React.memo` on expensive components with stable props
-- [ ] Contexts are split by update frequency
-- [ ] Large lists (100+ items) are virtualized
-- [ ] Stable, unique keys on all list items
-
-### Event Listeners & Memory
-- [ ] Scroll/resize listeners are `{ passive: true }`
-- [ ] All event listeners are cleaned up on unmount
-- [ ] Fetch requests use `AbortController`
-- [ ] Supabase realtime subscriptions are cleaned up
-- [ ] Timers and intervals are cleared on unmount
-
-### Data Fetching
-- [ ] Supabase queries select only needed columns
-- [ ] Large datasets are paginated
-- [ ] Frequently filtered/sorted columns have database indexes
-- [ ] Stale-while-revalidate or caching pattern for repeated queries
-
-### Bundle & Build
+- [ ] Suspense fallbacks use skeleton screens for page-level loading
+- [ ] Heavy components behind interactions (modals, dialogs) are lazy loaded
 - [ ] Vite config splits vendor chunks
-- [ ] Bundle size audited with `npx vite-bundle-visualizer`
 - [ ] No oversized dependencies (moment.js, full lodash, full icon libraries)
-- [ ] Chunk size warning limit set in Vite config
+- [ ] Bundle size audited with `npx vite-bundle-visualizer`
 
 ### Measurement
 - [ ] Lighthouse performance score is 90+
 - [ ] Core Web Vitals meet targets (LCP < 2.5s, INP < 200ms, CLS < 0.1)
-- [ ] `web-vitals` library installed for real user monitoring (optional)
