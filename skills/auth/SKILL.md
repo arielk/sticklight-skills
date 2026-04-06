@@ -1,5 +1,6 @@
 ---
 title: Auth
+version: "1.0"
 description: Authentication and authorization patterns for React + Vite + Tailwind apps using Cloud Backend (Supabase). Use when implementing login, signup, password reset, session management, protected routes, Row Level Security, role-based access control, or user data tables.
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: Skill Name
+version: "1.0"
 description: A clear description of what this skill does and when to use it.
 ---
 
