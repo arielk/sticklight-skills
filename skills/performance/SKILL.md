@@ -41,6 +41,7 @@ Scan every file for these. Each links to a detailed section with the correct fix
 - `<img>` without `loading` attribute → all images load eagerly by default
 - Hero/logo images without `fetchPriority="high"` → delays LCP
 - `<img>` without `className="w-full h-auto"` → renders at fixed pixel size instead of responsive
+- LCP image imported via JS (`import hero from '@/assets/hero.png'`) instead of `public/` → not discoverable until React renders, `fetchPriority` is useless
 - Missing `alt` text → accessibility and SEO issue
 
 ### Fonts (section 2) — affects FCP, LCP, CLS
@@ -126,6 +127,7 @@ Place resource hints at the top of `<head>`, before any other tags:
   
   <!-- Preload: critical assets -->
   <link rel="preload" as="font" type="font/woff2" href="/fonts/Inter-Regular.woff2" crossorigin />
+  <link rel="preload" as="image" href="/images/hero.webp" fetchpriority="high" />
 </head>
 ```
 
@@ -198,6 +200,39 @@ Prevent Cumulative Layout Shift (CLS) by specifying `width` and `height` on ever
 />
 ```
 
+### LCP Image Discoverability (SPA-Specific)
+
+In an SPA, images imported via JS (`import hero from './hero.png'`) are **not discoverable** until React executes. The browser cannot start downloading until: JS downloads → JS parses → React renders the component. This delays LCP by hundreds of milliseconds.
+
+**LCP candidate images (hero, banner, logo) must be in `public/` with a `<link rel="preload">` in `index.html`** so the browser discovers them during HTML parsing, before any JS runs:
+
+```html
+<!-- index.html — browser discovers immediately -->
+<link rel="preload" as="image" href="/images/hero.webp" fetchpriority="high" />
+```
+
+```tsx
+// Component — reference with string path, not JS import
+<img
+  src="/images/hero.webp"
+  alt="App builder dashboard"
+  width={1200}
+  height={630}
+  className="w-full h-auto"
+  loading="eager"
+  fetchPriority="high"
+/>
+```
+
+`fetchPriority="high"` only works if the browser can discover the URL in the initial HTML. If the URL comes from a JS import, the priority hint is ineffective.
+
+| Image Type | Preload in HTML? | Location |
+|------------|-----------------|----------|
+| Hero/banner (LCP candidate) | Yes | `public/images/` |
+| Site logo (if large/above fold) | Yes | `public/images/` |
+| Below-fold images | No | `src/assets/` (lazy loaded) |
+| Thumbnails, icons | No | `src/assets/` |
+
 ### Loading Priority Attributes
 
 | Image Location | Attributes | Why |
@@ -210,23 +245,11 @@ Prevent Cumulative Layout Shift (CLS) by specifying `width` and `height` on ever
 ### Implementation Examples
 
 ```tsx
-import logo from '@/assets/images/logo.svg';
-import heroImage from '@/assets/images/hero.webp';
 import galleryImage from '@/assets/images/gallery-preview.webp';
 
-// Critical — Logo (always visible, affects LCP)
+// Hero image — from public/, preloaded in index.html, LCP candidate
 <img
-  src={logo}
-  alt="Sticklight logo"
-  width={152}
-  height={28}
-  loading="eager"
-  fetchPriority="high"
-/>
-
-// Hero image (above fold, largest paint candidate)
-<img
-  src={heroImage}
+  src="/images/hero.webp"
   alt="App builder dashboard showing a website preview"
   width={1200}
   height={630}
@@ -235,7 +258,17 @@ import galleryImage from '@/assets/images/gallery-preview.webp';
   fetchPriority="high"
 />
 
-// Below fold — Gallery item
+// Logo — from public/, preloaded in index.html
+<img
+  src="/images/logo.svg"
+  alt="Sticklight logo"
+  width={152}
+  height={28}
+  loading="eager"
+  fetchPriority="high"
+/>
+
+// Below fold — from src/assets/, lazy loaded
 <img
   src={galleryImage}
   alt="Template preview for e-commerce store"
@@ -537,7 +570,6 @@ export default function Gallery() {
 ```tsx
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import heroBanner from '@/assets/images/hero.webp';
 
 export default function Gallery() {
   const [images, setImages] = useState<{ id: string; url: string; alt: string }[]>([]);
@@ -560,8 +592,9 @@ export default function Gallery() {
 
   return (
     <div>
+      {/* Hero from public/ — preloaded in index.html, discoverable before JS */}
       <img
-        src={heroBanner}
+        src="/images/hero.webp"
         alt="Gallery hero banner"
         width={1200}
         height={630}
@@ -614,7 +647,7 @@ export default function Gallery() {
 
 **Changes made:**
 - **CLS fix:** Hero image — added `width`, `height`, `className="w-full h-auto"`, descriptive `alt`
-- **LCP fix:** Hero image — added `loading="eager"`, `fetchPriority="high"`
+- **LCP fix:** Hero image — moved to `public/images/`, referenced via string path (not JS import) so browser discovers it before React renders, added `loading="eager"` and `fetchPriority="high"`, preloaded in `index.html`
 - **CLS fix:** Gallery images — added `width`, `height`, `className="w-full h-auto"`, `loading="lazy"`, descriptive `alt`
 - **INP/TBT fix:** Scroll listener — added `{ passive: true }`, added cleanup on unmount
 - **TBT fix:** Animation — replaced `left` (layout-triggering) with `transform: translateX()` (GPU-accelerated)
@@ -635,6 +668,7 @@ export default function Gallery() {
 
 ### Images
 - [ ] All images have `width` and `height` attributes
+- [ ] LCP image is in `public/` with `<link rel="preload">` in `index.html` (not imported via JS)
 - [ ] Hero/logo images use `loading="eager"` and `fetchPriority="high"`
 - [ ] Below-fold images use `loading="lazy"`
 - [ ] All images have descriptive `alt` text
